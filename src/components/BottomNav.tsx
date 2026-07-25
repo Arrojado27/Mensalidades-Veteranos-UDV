@@ -9,7 +9,7 @@ const items = [
 
 export function BottomNav() {
   return (
-    <nav className="sticky bottom-0 z-20 flex border-t border-black/5 bg-white/95 backdrop-blur pb-[env(safe-area-inset-bottom)] dark:bg-[#1c191a]/95 dark:border-white/10">
+    <nav className="sticky bottom-0 z-20 flex border-t border-black/5 bg-white pb-[env(safe-area-inset-bottom)] dark:bg-[#1c191a] dark:border-white/10">
       {items.map(({ to, label, icon: Icon }) => (
         <NavLink
           key={to}
