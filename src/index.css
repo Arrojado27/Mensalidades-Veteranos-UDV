@@ -20,19 +20,27 @@ body,
   height: 100%;
 }
 
+html {
+  background: #fff;
+  overscroll-behavior-y: none;
+}
+
 body {
   margin: 0;
-  background: #f6f3ef;
+  background: #fff;
   color: #1a1a1a;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-family: var(--font-sans);
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: none;
 }
 
 @media (prefers-color-scheme: dark) {
+  html {
+    background: #1c191a;
+  }
   body {
-    background: #121012;
+    background: #1c191a;
     color: #f2ede8;
   }
 }
