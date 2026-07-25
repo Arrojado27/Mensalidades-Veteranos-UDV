@@ -1,0 +1,75 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-brand-red: #a41f24;
+  --color-brand-red-dark: #7a171b;
+  --color-brand-red-light: #c2393e;
+  --color-brand-gold: #f0b429;
+  --color-brand-gold-dark: #c9950f;
+  --color-brand-black: #1a1a1a;
+  --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #f6f3ef;
+  color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: var(--font-sans);
+  overscroll-behavior-y: contain;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #121012;
+    color: #f2ede8;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+#root {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.06);
+  position: relative;
+}
+
+@media (prefers-color-scheme: dark) {
+  #root {
+    background: #1c191a;
+  }
+}
+
+input,
+button,
+select,
+textarea {
+  font-family: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(164, 31, 36, 0.25);
+  border-radius: 999px;
+}
