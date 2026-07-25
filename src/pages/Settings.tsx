@@ -171,6 +171,30 @@ export function Settings() {
 
         <section className="rounded-2xl border border-black/[0.06] p-4 dark:border-white/10">
           <h2 className="mb-3 text-[13px] font-bold uppercase tracking-wide text-black/40 dark:text-white/40">
+            Relatórios
+          </h2>
+          <p className="mb-3 text-[13px] text-black/50 dark:text-white/50">
+            Exporta o mapa de mensalidades, despesas e saldo para partilhar, imprimir ou continuar
+            a trabalhar noutro programa.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => import('../lib/exportReports').then((m) => m.exportSeasonToExcel(season))}
+              className="flex-1 rounded-xl bg-brand-red py-2.5 text-sm font-semibold text-white"
+            >
+              Excel (.xlsx)
+            </button>
+            <button
+              onClick={() => import('../lib/exportReports').then((m) => m.exportSeasonToPDF(season))}
+              className="flex-1 rounded-xl bg-black/[0.04] py-2.5 text-sm font-semibold text-black/60 dark:bg-white/10 dark:text-white/60"
+            >
+              PDF
+            </button>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-black/[0.06] p-4 dark:border-white/10">
+          <h2 className="mb-3 text-[13px] font-bold uppercase tracking-wide text-black/40 dark:text-white/40">
             Cópia de segurança
           </h2>
           <p className="mb-3 text-[13px] text-black/50 dark:text-white/50">
