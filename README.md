@@ -3,7 +3,7 @@
 App móvel (PWA) para o tesoureiro dos Veteranos U.D.V. controlar as mensalidades dos
 jogadores, despesas e saldo do grupo, época a época.
 
-🔗 **App publicada:** https://arrojado27.github.io/mensalidades-veteranos-udv/
+🔗 **App publicada:** https://arrojado27.github.io/Mensalidades-Veteranos-UDV/
 (deploy automático a cada push para `main`, via GitHub Actions — ver
 `.github/workflows/deploy.yml`.)
 
