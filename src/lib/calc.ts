@@ -80,20 +80,17 @@ export function monthExpensesTotal(season: SeasonData, month: MonthKey) {
 }
 
 /**
- * Saldo em caixa no fim de cada mês, calculado automaticamente (saldo inicial +
- * receitas − despesas). Sempre que um mês tem um saldo confirmado manualmente
- * (reconciliação com o banco/caixa real), esse valor passa a ser a base para os
- * meses seguintes — o cálculo automático só preenche os meses sem confirmação.
+ * Saldo em caixa no fim de cada mês, calculado automaticamente (saldo transitado +
+ * receitas − despesas do mês). `confirmedBalances[mês]` guarda, quando existe, um
+ * ajuste ao saldo TRANSITADO para esse mês (não ao resultado final) — por isso as
+ * receitas/despesas desse próprio mês são sempre somadas por cima, em tempo real,
+ * mesmo quando o mês já teve um ajuste manual.
  */
 export function computeLedgerBalance(season: SeasonData, uptoMonth: MonthKey): number {
   let balance = season.openingBalance
   for (const m of SEASON_MONTHS) {
-    const manual = season.confirmedBalances[m.key]
-    if (manual !== undefined) {
-      balance = manual
-    } else {
-      balance += summarizeMonth(season, m.key).totalReceived - monthExpensesTotal(season, m.key)
-    }
+    const carryIn = season.confirmedBalances[m.key] ?? balance
+    balance = carryIn + summarizeMonth(season, m.key).totalReceived - monthExpensesTotal(season, m.key)
     if (m.key === uptoMonth) break
   }
   return balance

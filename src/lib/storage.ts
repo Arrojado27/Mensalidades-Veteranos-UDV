@@ -1,14 +1,45 @@
-import type { AppData } from '../types'
+import type { AppData, SeasonData } from '../types'
+import { SEASON_MONTHS } from '../types'
 import { createSeedSeason } from '../data/seed'
+import { monthExpensesTotal, summarizeMonth } from './calc'
 
 const STORAGE_KEY = 'udv-veteranos-mensalidades-v1'
+const DATA_VERSION = 2
 
 function createInitialData(): AppData {
   const season = createSeedSeason()
   return {
-    version: 1,
+    version: DATA_VERSION,
     seasons: [season],
     currentSeasonId: season.id,
+  }
+}
+
+/**
+ * Antes da v2, `confirmedBalances[mês]` guardava o saldo FINAL do mês, o que
+ * "congelava" o valor e ignorava despesas adicionadas depois. Converte para o
+ * saldo TRANSITADO equivalente (ver computeLedgerBalance), preservando o valor
+ * final já mostrado ao utilizador e passando a atualizar-se em tempo real daqui
+ * para a frente.
+ */
+function migrateSeasonToV2(season: SeasonData): SeasonData {
+  const confirmedBalances: SeasonData['confirmedBalances'] = {}
+  for (const m of SEASON_MONTHS) {
+    const endValue = season.confirmedBalances[m.key]
+    if (endValue === undefined) continue
+    const income = summarizeMonth(season, m.key).totalReceived
+    const expenses = monthExpensesTotal(season, m.key)
+    confirmedBalances[m.key] = endValue - income + expenses
+  }
+  return { ...season, confirmedBalances }
+}
+
+function migrateData(data: AppData): AppData {
+  if (data.version >= DATA_VERSION) return data
+  return {
+    ...data,
+    version: DATA_VERSION,
+    seasons: data.seasons.map(migrateSeasonToV2),
   }
 }
 
@@ -24,7 +55,9 @@ export function loadData(): AppData {
     if (!parsed.seasons || parsed.seasons.length === 0) {
       return createInitialData()
     }
-    return parsed
+    const migrated = migrateData(parsed)
+    if (migrated !== parsed) saveData(migrated)
+    return migrated
   } catch {
     return createInitialData()
   }
@@ -57,7 +90,7 @@ export function importBackup(file: File): Promise<AppData> {
           reject(new Error('Ficheiro inválido: não parece ser um backup desta app.'))
           return
         }
-        resolve(parsed)
+        resolve(migrateData(parsed))
       } catch {
         reject(new Error('Não foi possível ler o ficheiro. Confirma que é um backup .json válido.'))
       }

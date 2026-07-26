@@ -128,9 +128,8 @@ export function Expenses() {
           </p>
           <p className="mt-0.5 text-2xl font-extrabold">{formatEuro(ledgerBalance)}</p>
           <p className="mt-1 text-[12px] text-white/80">
-            {confirmedBalance != null
-              ? 'Ajustado manualmente — atualiza-se sozinho a partir daqui.'
-              : 'Calculado automaticamente: atualiza-se já ao adicionares uma despesa.'}
+            Atualiza-se sozinho sempre que adicionas ou removes uma despesa
+            {confirmedBalance != null ? ' (com um ajuste manual aplicado a este mês)' : ''}.
           </p>
         </div>
 
@@ -151,7 +150,7 @@ export function Expenses() {
                 <input
                   type="number"
                   inputMode="decimal"
-                  value={balanceInput || (confirmedBalance != null ? String(confirmedBalance) : '')}
+                  value={balanceInput}
                   onChange={(e) => setBalanceInput(e.target.value)}
                   placeholder={String(ledgerBalance)}
                   className="min-w-0 flex-1 rounded-xl border border-black/10 px-3 py-2.5 text-[15px] outline-none focus:border-brand-red dark:border-white/15 dark:bg-white/5"

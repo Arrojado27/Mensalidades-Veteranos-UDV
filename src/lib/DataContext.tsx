@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { AppData, ExpenseItem, MonthKey, Player, PaymentEntry, SeasonData } from '../types'
+import { monthExpensesTotal, summarizeMonth } from './calc'
 import { loadData, saveData } from './storage'
 
 interface DataContextValue {
@@ -109,11 +110,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
   )
 
   const setConfirmedBalance = useCallback(
-    (month: MonthKey, value: number | undefined) => {
+    (month: MonthKey, endOfMonthValue: number | undefined) => {
       updateSeason((s) => {
         const confirmedBalances = { ...s.confirmedBalances }
-        if (value === undefined) delete confirmedBalances[month]
-        else confirmedBalances[month] = value
+        if (endOfMonthValue === undefined) {
+          delete confirmedBalances[month]
+        } else {
+          // Guarda o saldo TRANSITADO para este mês, não o valor final — assim as
+          // receitas/despesas do próprio mês continuam a somar-se em tempo real.
+          const income = summarizeMonth(s, month).totalReceived
+          const expenses = monthExpensesTotal(s, month)
+          confirmedBalances[month] = endOfMonthValue - income + expenses
+        }
         return { ...s, confirmedBalances }
       })
     },
