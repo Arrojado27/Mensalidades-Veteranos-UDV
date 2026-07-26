@@ -79,28 +79,24 @@ export function monthExpensesTotal(season: SeasonData, month: MonthKey) {
   return expensesForMonth(season, month).reduce((sum, e) => sum + e.amount, 0)
 }
 
-/** Saldo confirmado mais recente registado (o mais próximo, mas não posterior, ao mês indicado). */
-export function latestConfirmedBalanceUpTo(season: SeasonData, month: MonthKey) {
-  const idx = monthIndex(month)
-  for (let i = idx; i >= 0; i--) {
-    const key = SEASON_MONTHS[i].key
-    const value = season.confirmedBalances[key]
-    if (value !== undefined) {
-      return { month: key, value }
+/**
+ * Saldo em caixa no fim de cada mês, calculado automaticamente (saldo inicial +
+ * receitas − despesas). Sempre que um mês tem um saldo confirmado manualmente
+ * (reconciliação com o banco/caixa real), esse valor passa a ser a base para os
+ * meses seguintes — o cálculo automático só preenche os meses sem confirmação.
+ */
+export function computeLedgerBalance(season: SeasonData, uptoMonth: MonthKey): number {
+  let balance = season.openingBalance
+  for (const m of SEASON_MONTHS) {
+    const manual = season.confirmedBalances[m.key]
+    if (manual !== undefined) {
+      balance = manual
+    } else {
+      balance += summarizeMonth(season, m.key).totalReceived - monthExpensesTotal(season, m.key)
     }
+    if (m.key === uptoMonth) break
   }
-  return null
-}
-
-export function latestConfirmedBalance(season: SeasonData) {
-  for (let i = SEASON_MONTHS.length - 1; i >= 0; i--) {
-    const key = SEASON_MONTHS[i].key
-    const value = season.confirmedBalances[key]
-    if (value !== undefined) {
-      return { month: key, value }
-    }
-  }
-  return null
+  return balance
 }
 
 export function formatEuro(value: number) {

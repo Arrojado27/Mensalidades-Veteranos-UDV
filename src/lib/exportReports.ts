@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
-import { amountForEntry, formatEuro, monthExpensesTotal } from './calc'
+import { amountForEntry, computeLedgerBalance, formatEuro, monthExpensesTotal } from './calc'
 import { SEASON_MONTHS } from '../types'
 import type { SeasonData } from '../types'
 
@@ -64,10 +64,11 @@ export function exportSeasonToExcel(season: SeasonData) {
       return { Mês: `${m.label} ${m.year}`, Descrição: e.description, 'Valor (€)': e.amount }
     })
 
-  const saldoRows = SEASON_MONTHS.filter((m) => season.confirmedBalances[m.key] !== undefined).map((m) => ({
+  const saldoRows = SEASON_MONTHS.map((m) => ({
     Mês: `${m.label} ${m.year}`,
     'Despesas do mês (€)': monthExpensesTotal(season, m.key),
-    'Saldo confirmado (€)': season.confirmedBalances[m.key],
+    'Saldo em caixa (€)': computeLedgerBalance(season, m.key),
+    Ajustado: season.confirmedBalances[m.key] !== undefined ? 'Sim' : 'Não',
   }))
 
   const wb = XLSX.utils.book_new()
@@ -126,21 +127,22 @@ export function exportSeasonToPDF(season: SeasonData) {
     tableWidth: 300,
   })
 
-  const saldoBody = SEASON_MONTHS.filter((m) => season.confirmedBalances[m.key] !== undefined).map((m) => [
+  const saldoBody = SEASON_MONTHS.map((m) => [
     `${m.label} ${m.year}`,
     formatEuro(monthExpensesTotal(season, m.key)),
-    formatEuro(season.confirmedBalances[m.key]!),
+    formatEuro(computeLedgerBalance(season, m.key)),
+    season.confirmedBalances[m.key] !== undefined ? 'Ajustado' : 'Automático',
   ])
 
   const afterDespesasY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY
 
   autoTable(doc, {
     startY: afterDespesasY + 30,
-    head: [['Mês', 'Despesas do mês', 'Saldo confirmado']],
+    head: [['Mês', 'Despesas do mês', 'Saldo em caixa', '']],
     body: saldoBody,
     styles: { fontSize: 9, cellPadding: 5 },
     headStyles: { fillColor: brandRed, textColor: 255 },
-    tableWidth: 300,
+    tableWidth: 340,
   })
 
   doc.save(`${fileNameBase(season)}.pdf`)

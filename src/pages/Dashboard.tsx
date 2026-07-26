@@ -5,9 +5,9 @@ import { MonthChip } from '../components/MonthChip'
 import { PaymentEditorModal } from '../components/PaymentEditorModal'
 import { useData } from '../lib/DataContext'
 import {
+  computeLedgerBalance,
   formatEuro,
   getCurrentMonthKey,
-  latestConfirmedBalance,
   monthIndex,
   seasonTotals,
   summarizeMonth,
@@ -23,7 +23,7 @@ export function Dashboard() {
   const referenceMonth = currentMonthKey ?? SEASON_MONTHS[SEASON_MONTHS.length - 1].key
   const referenceInfo = SEASON_MONTHS.find((m) => m.key === referenceMonth)!
   const summary = useMemo(() => summarizeMonth(season, referenceMonth), [season, referenceMonth])
-  const balance = latestConfirmedBalance(season)
+  const balance = useMemo(() => computeLedgerBalance(season, referenceMonth), [season, referenceMonth])
   const totals = useMemo(() => seasonTotals(season), [season])
 
   const seasonEnded = currentMonthKey === null && monthIndex(referenceMonth) === SEASON_MONTHS.length - 1
@@ -48,11 +48,9 @@ export function Dashboard() {
 
         <div className="rounded-2xl bg-brand-red p-5 text-white shadow-md">
           <p className="text-[12px] font-medium uppercase tracking-wide text-white/70">
-            Saldo {balance ? `(a ${SEASON_MONTHS.find((m) => m.key === balance.month)?.label})` : 'do grupo'}
+            Saldo em caixa (a {referenceInfo.label})
           </p>
-          <p className="mt-1 text-3xl font-extrabold">
-            {balance ? formatEuro(balance.value) : '—'}
-          </p>
+          <p className="mt-1 text-3xl font-extrabold">{formatEuro(balance)}</p>
           <div className="mt-3 flex gap-4 text-[12px] text-white/80">
             <span>Recebido: {formatEuro(totals.totalReceived)}</span>
             <span>Despesas: {formatEuro(totals.totalExpenses)}</span>

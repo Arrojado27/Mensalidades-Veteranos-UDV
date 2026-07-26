@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Header } from '../components/Header'
 import { useData } from '../lib/DataContext'
 import {
+  computeLedgerBalance,
   expensesForMonth,
   formatEuro,
   getCurrentMonthKey,
@@ -18,11 +19,13 @@ export function Expenses() {
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [balanceInput, setBalanceInput] = useState('')
+  const [showManualAdjust, setShowManualAdjust] = useState(false)
 
   const items = useMemo(() => expensesForMonth(season, month), [season, month])
   const total = monthExpensesTotal(season, month)
   const received = summarizeMonth(season, month).totalReceived
   const confirmedBalance = season.confirmedBalances[month]
+  const ledgerBalance = useMemo(() => computeLedgerBalance(season, month), [season, month])
 
   return (
     <div className="flex flex-1 flex-col pb-4">
@@ -119,33 +122,69 @@ export function Expenses() {
           </form>
         </div>
 
-        <div className="rounded-2xl border border-black/[0.06] p-4 dark:border-white/10">
-          <h2 className="mb-2 text-[13px] font-bold uppercase tracking-wide text-black/40 dark:text-white/40">
-            Saldo confirmado no fim do mês
-          </h2>
-          <div className="flex gap-2">
-            <input
-              type="number"
-              inputMode="decimal"
-              value={balanceInput || (confirmedBalance != null ? String(confirmedBalance) : '')}
-              onChange={(e) => setBalanceInput(e.target.value)}
-              placeholder="Ex: 3945"
-              className="min-w-0 flex-1 rounded-xl border border-black/10 px-3 py-2.5 text-[15px] outline-none focus:border-brand-red dark:border-white/15 dark:bg-white/5"
-            />
-            <button
-              onClick={() => {
-                if (balanceInput.trim() === '') return
-                setConfirmedBalance(month, Number(balanceInput))
-                setBalanceInput('')
-              }}
-              className="rounded-xl bg-brand-red px-4 text-sm font-semibold text-white"
-            >
-              Guardar
-            </button>
-          </div>
-          <p className="mt-2 text-[12px] text-black/40 dark:text-white/40">
-            Confirma aqui o saldo real da conta/caixa no fim de cada mês, tal como fazias no documento.
+        <div className="rounded-2xl bg-brand-red p-4 text-white shadow-md">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-white/70">
+            Saldo em caixa no fim do mês
           </p>
+          <p className="mt-0.5 text-2xl font-extrabold">{formatEuro(ledgerBalance)}</p>
+          <p className="mt-1 text-[12px] text-white/80">
+            {confirmedBalance != null
+              ? 'Ajustado manualmente — atualiza-se sozinho a partir daqui.'
+              : 'Calculado automaticamente: atualiza-se já ao adicionares uma despesa.'}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-black/[0.06] p-4 dark:border-white/10">
+          {!showManualAdjust ? (
+            <button
+              onClick={() => setShowManualAdjust(true)}
+              className="text-[12px] font-semibold text-black/40 underline dark:text-white/40"
+            >
+              Ajustar saldo manualmente (opcional)
+            </button>
+          ) : (
+            <>
+              <h2 className="mb-2 text-[13px] font-bold uppercase tracking-wide text-black/40 dark:text-white/40">
+                Ajustar saldo manualmente
+              </h2>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={balanceInput || (confirmedBalance != null ? String(confirmedBalance) : '')}
+                  onChange={(e) => setBalanceInput(e.target.value)}
+                  placeholder={String(ledgerBalance)}
+                  className="min-w-0 flex-1 rounded-xl border border-black/10 px-3 py-2.5 text-[15px] outline-none focus:border-brand-red dark:border-white/15 dark:bg-white/5"
+                />
+                <button
+                  onClick={() => {
+                    if (balanceInput.trim() === '') return
+                    setConfirmedBalance(month, Number(balanceInput))
+                    setBalanceInput('')
+                  }}
+                  className="rounded-xl bg-brand-red px-4 text-sm font-semibold text-white"
+                >
+                  Guardar
+                </button>
+              </div>
+              {confirmedBalance != null && (
+                <button
+                  onClick={() => {
+                    setConfirmedBalance(month, undefined)
+                    setBalanceInput('')
+                  }}
+                  className="mt-2 text-[12px] font-semibold text-brand-red underline"
+                >
+                  Repor cálculo automático
+                </button>
+              )}
+              <p className="mt-2 text-[12px] text-black/40 dark:text-white/40">
+                Usa isto só se o saldo real (banco/caixa) for diferente do calculado — por exemplo,
+                para reconciliar. A partir do valor que guardares, os meses seguintes continuam a
+                calcular-se automaticamente.
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>
