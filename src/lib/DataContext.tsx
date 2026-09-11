@@ -1,8 +1,38 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { AppData, ExpenseItem, MonthKey, Player, PaymentEntry, SeasonData } from '../types'
-import { monthExpensesTotal, summarizeMonth } from './calc'
+import type {
+  AppData,
+  CarriedDebt,
+  Dinner,
+  DinnerAttendee,
+  ExpenseItem,
+  MonthKey,
+  PaymentEntry,
+  PaymentMethod,
+  Player,
+  SeasonData,
+} from '../types'
+import {
+  buildCarriedDebts,
+  monthIncomeTotal,
+  monthOutflowTotal,
+  seasonFinalBalance,
+} from './calc'
 import { loadData, saveData } from './storage'
+
+export interface NewSeasonOptions {
+  label: string
+  startYear: number
+  monthlyFee: number
+  dinnerPlayerFee: number
+  dinnerGuestFee: number
+  /** Transporta os jogadores ativos da época atual. */
+  carryPlayers: boolean
+  /** Arranca com o saldo em caixa da época atual. */
+  carryBalance: boolean
+  /** Transporta os meses por pagar da época atual como dívidas a cobrar. */
+  carryDebts: boolean
+}
 
 interface DataContextValue {
   data: AppData
@@ -17,6 +47,18 @@ interface DataContextValue {
   removeExpense: (expenseId: string) => void
   setConfirmedBalance: (month: MonthKey, value: number | undefined) => void
   setMonthlyFee: (fee: number) => void
+  setDinnerFees: (playerFee: number, guestFee: number) => void
+  addDinner: (dinner: { date: string; opponent: string; note?: string }) => string
+  updateDinner: (dinnerId: string, patch: Partial<Omit<Dinner, 'id'>>) => void
+  removeDinner: (dinnerId: string) => void
+  addAttendees: (dinnerId: string, attendees: Omit<DinnerAttendee, 'id'>[]) => void
+  updateAttendee: (dinnerId: string, attendeeId: string, patch: Partial<DinnerAttendee>) => void
+  removeAttendee: (dinnerId: string, attendeeId: string) => void
+  addDebt: (debt: Omit<CarriedDebt, 'id'>) => void
+  settleDebt: (debtId: string, settle: { month: MonthKey; method: PaymentMethod; amount: number }) => void
+  unsettleDebt: (debtId: string) => void
+  removeDebt: (debtId: string) => void
+  createSeason: (options: NewSeasonOptions) => void
 }
 
 const DataContext = createContext<DataContextValue | null>(null)
@@ -53,6 +95,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [setData],
   )
 
+  const updateDinnerInSeason = useCallback(
+    (dinnerId: string, updater: (dinner: Dinner) => Dinner) => {
+      updateSeason((s) => ({
+        ...s,
+        dinners: s.dinners.map((d) => (d.id === dinnerId ? updater(d) : d)),
+      }))
+    },
+    [updateSeason],
+  )
+
   const setPayment = useCallback(
     (playerId: string, month: MonthKey, entry: PaymentEntry) => {
       updateSeason((s) => ({
@@ -87,7 +139,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const removePlayer = useCallback(
     (playerId: string) => {
-      updateSeason((s) => ({ ...s, players: s.players.filter((p) => p.id !== playerId) }))
+      updateSeason((s) => ({
+        ...s,
+        players: s.players.filter((p) => p.id !== playerId),
+        // Tira-o também dos jantares, para não continuar a contar dinheiro dele.
+        dinners: s.dinners.map((d) => ({
+          ...d,
+          attendees: d.attendees.filter((a) => a.playerId !== playerId),
+        })),
+      }))
     },
     [updateSeason],
   )
@@ -117,10 +177,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
           delete confirmedBalances[month]
         } else {
           // Guarda o saldo TRANSITADO para este mês, não o valor final — assim as
-          // receitas/despesas do próprio mês continuam a somar-se em tempo real.
-          const income = summarizeMonth(s, month).totalReceived
-          const expenses = monthExpensesTotal(s, month)
-          confirmedBalances[month] = endOfMonthValue - income + expenses
+          // entradas/saídas do próprio mês continuam a somar-se em tempo real.
+          confirmedBalances[month] =
+            endOfMonthValue - monthIncomeTotal(s, month) + monthOutflowTotal(s, month)
         }
         return { ...s, confirmedBalances }
       })
@@ -133,6 +192,153 @@ export function DataProvider({ children }: { children: ReactNode }) {
       updateSeason((s) => ({ ...s, monthlyFee: fee }))
     },
     [updateSeason],
+  )
+
+  const setDinnerFees = useCallback(
+    (playerFee: number, guestFee: number) => {
+      updateSeason((s) => ({ ...s, dinnerPlayerFee: playerFee, dinnerGuestFee: guestFee }))
+    },
+    [updateSeason],
+  )
+
+  const addDinner = useCallback(
+    ({ date, opponent, note }: { date: string; opponent: string; note?: string }) => {
+      const id = nextId('dinner')
+      updateSeason((s) => ({
+        ...s,
+        dinners: [
+          ...s.dinners,
+          {
+            id,
+            date,
+            opponent,
+            note,
+            playerFee: s.dinnerPlayerFee,
+            guestFee: s.dinnerGuestFee,
+            attendees: [],
+          },
+        ],
+      }))
+      return id
+    },
+    [updateSeason],
+  )
+
+  const updateDinner = useCallback(
+    (dinnerId: string, patch: Partial<Omit<Dinner, 'id'>>) => {
+      updateDinnerInSeason(dinnerId, (d) => ({ ...d, ...patch }))
+    },
+    [updateDinnerInSeason],
+  )
+
+  const removeDinner = useCallback(
+    (dinnerId: string) => {
+      updateSeason((s) => ({ ...s, dinners: s.dinners.filter((d) => d.id !== dinnerId) }))
+    },
+    [updateSeason],
+  )
+
+  const addAttendees = useCallback(
+    (dinnerId: string, attendees: Omit<DinnerAttendee, 'id'>[]) => {
+      updateDinnerInSeason(dinnerId, (d) => ({
+        ...d,
+        attendees: [...d.attendees, ...attendees.map((a) => ({ ...a, id: nextId('att') }))],
+      }))
+    },
+    [updateDinnerInSeason],
+  )
+
+  const updateAttendee = useCallback(
+    (dinnerId: string, attendeeId: string, patch: Partial<DinnerAttendee>) => {
+      updateDinnerInSeason(dinnerId, (d) => ({
+        ...d,
+        attendees: d.attendees.map((a) => (a.id === attendeeId ? { ...a, ...patch } : a)),
+      }))
+    },
+    [updateDinnerInSeason],
+  )
+
+  const removeAttendee = useCallback(
+    (dinnerId: string, attendeeId: string) => {
+      updateDinnerInSeason(dinnerId, (d) => ({
+        ...d,
+        attendees: d.attendees.filter((a) => a.id !== attendeeId),
+      }))
+    },
+    [updateDinnerInSeason],
+  )
+
+  const addDebt = useCallback(
+    (debt: Omit<CarriedDebt, 'id'>) => {
+      updateSeason((s) => ({ ...s, carriedDebts: [...s.carriedDebts, { ...debt, id: nextId('debt') }] }))
+    },
+    [updateSeason],
+  )
+
+  const settleDebt = useCallback(
+    (debtId: string, settle: { month: MonthKey; method: PaymentMethod; amount: number }) => {
+      updateSeason((s) => ({
+        ...s,
+        carriedDebts: s.carriedDebts.map((d) =>
+          d.id === debtId
+            ? { ...d, settled: { ...settle, date: new Date().toISOString().slice(0, 10) } }
+            : d,
+        ),
+      }))
+    },
+    [updateSeason],
+  )
+
+  const unsettleDebt = useCallback(
+    (debtId: string) => {
+      updateSeason((s) => ({
+        ...s,
+        carriedDebts: s.carriedDebts.map((d) =>
+          d.id === debtId ? { ...d, settled: undefined } : d,
+        ),
+      }))
+    },
+    [updateSeason],
+  )
+
+  const removeDebt = useCallback(
+    (debtId: string) => {
+      updateSeason((s) => ({ ...s, carriedDebts: s.carriedDebts.filter((d) => d.id !== debtId) }))
+    },
+    [updateSeason],
+  )
+
+  const createSeason = useCallback(
+    (options: NewSeasonOptions) => {
+      setData((prev) => {
+        const current = prev.seasons.find((s) => s.id === prev.currentSeasonId) ?? prev.seasons[0]
+        const newSeason: SeasonData = {
+          id: `season-${Date.now()}`,
+          label: options.label,
+          startYear: options.startYear,
+          monthlyFee: options.monthlyFee,
+          dinnerPlayerFee: options.dinnerPlayerFee,
+          dinnerGuestFee: options.dinnerGuestFee,
+          openingBalance: options.carryBalance && current ? seasonFinalBalance(current) : 0,
+          players:
+            options.carryPlayers && current
+              ? current.players
+                  .filter((p) => p.active)
+                  .map((p) => ({ id: p.id, name: p.name, active: true, payments: {} }))
+              : [],
+          expenses: [],
+          dinners: [],
+          carriedDebts: options.carryDebts && current ? buildCarriedDebts(current) : [],
+          confirmedBalances: {},
+        }
+        return {
+          ...prev,
+          seasons: [...prev.seasons, newSeason],
+          currentSeasonId: newSeason.id,
+        }
+      })
+    },
+    [setData],
   )
 
   const value: DataContextValue = {
@@ -148,6 +354,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
     removeExpense,
     setConfirmedBalance,
     setMonthlyFee,
+    setDinnerFees,
+    addDinner,
+    updateDinner,
+    removeDinner,
+    addAttendees,
+    updateAttendee,
+    removeAttendee,
+    addDebt,
+    settleDebt,
+    unsettleDebt,
+    removeDebt,
+    createSeason,
   }
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>

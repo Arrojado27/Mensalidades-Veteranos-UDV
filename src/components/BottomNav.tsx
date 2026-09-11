@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 const items = [
   { to: '/', label: 'Início', icon: HomeIcon },
   { to: '/jogadores', label: 'Jogadores', icon: PeopleIcon },
+  { to: '/jantares', label: 'Jantares', icon: DinnerIcon },
   { to: '/despesas', label: 'Despesas', icon: WalletIcon },
   { to: '/definicoes', label: 'Definições', icon: GearIcon },
 ]
@@ -16,12 +17,12 @@ export function BottomNav() {
           to={to}
           end={to === '/'}
           className={({ isActive }) =>
-            `flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
+            `flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${
               isActive ? 'text-brand-red' : 'text-black/40 dark:text-white/40'
             }`
           }
         >
-          <Icon className="h-6 w-6" />
+          <Icon className="h-[22px] w-[22px]" />
           {label}
         </NavLink>
       ))}
@@ -45,6 +46,17 @@ function PeopleIcon(props: React.SVGProps<SVGSVGElement>) {
       <path d="M3.5 20c.7-3.4 3-5.3 5.5-5.3s4.8 1.9 5.5 5.3" />
       <circle cx="17" cy="8.5" r="2.4" />
       <path d="M15.8 14.8c1.9.2 3.5 1.9 4 4.7" />
+    </svg>
+  )
+}
+
+function DinnerIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M5 3v7a2 2 0 0 0 4 0V3" />
+      <path d="M7 10v11" />
+      <path d="M17.5 3c-1.5 1.6-2.5 3.6-2.5 6 0 1.7.8 3 2.5 3H19V3z" />
+      <path d="M18 12v9" />
     </svg>
   )
 }

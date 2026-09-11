@@ -6,27 +6,36 @@ import { PaymentEditorModal } from '../components/PaymentEditorModal'
 import { useData } from '../lib/DataContext'
 import {
   computeLedgerBalance,
+  formatDinnerDate,
   formatEuro,
   getCurrentMonthKey,
   monthIndex,
+  monthInfo,
+  openDebts,
+  openDebtsTotal,
   seasonTotals,
+  sortedDinners,
+  summarizeDinner,
   summarizeMonth,
 } from '../lib/calc'
-import { SEASON_MONTHS } from '../types'
+import { MONTH_KEYS } from '../types'
 import type { MonthKey, Player } from '../types'
 
 export function Dashboard() {
   const { season, setPayment } = useData()
   const [editing, setEditing] = useState<{ player: Player; month: MonthKey } | null>(null)
 
-  const currentMonthKey = getCurrentMonthKey()
-  const referenceMonth = currentMonthKey ?? SEASON_MONTHS[SEASON_MONTHS.length - 1].key
-  const referenceInfo = SEASON_MONTHS.find((m) => m.key === referenceMonth)!
+  const currentMonthKey = getCurrentMonthKey(season)
+  const referenceMonth = currentMonthKey ?? MONTH_KEYS[MONTH_KEYS.length - 1]
+  const referenceInfo = monthInfo(season, referenceMonth)
   const summary = useMemo(() => summarizeMonth(season, referenceMonth), [season, referenceMonth])
   const balance = useMemo(() => computeLedgerBalance(season, referenceMonth), [season, referenceMonth])
   const totals = useMemo(() => seasonTotals(season), [season])
+  const debtsTotal = useMemo(() => openDebtsTotal(season), [season])
+  const debtsCount = useMemo(() => openDebts(season).length, [season])
+  const nextDinner = useMemo(() => sortedDinners(season)[0], [season])
 
-  const seasonEnded = currentMonthKey === null && monthIndex(referenceMonth) === SEASON_MONTHS.length - 1
+  const seasonEnded = currentMonthKey === null && monthIndex(referenceMonth) === MONTH_KEYS.length - 1
   const progressPct = summary.paid.length + summary.pending.length === 0
     ? 100
     : Math.round((summary.paid.length / (summary.paid.length + summary.pending.length)) * 100)
@@ -51,11 +60,29 @@ export function Dashboard() {
             Saldo em caixa (a {referenceInfo.label})
           </p>
           <p className="mt-1 text-3xl font-extrabold">{formatEuro(balance)}</p>
-          <div className="mt-3 flex gap-4 text-[12px] text-white/80">
-            <span>Recebido: {formatEuro(totals.totalReceived)}</span>
-            <span>Despesas: {formatEuro(totals.totalExpenses)}</span>
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-white/80">
+            <span>Mensalidades: {formatEuro(totals.totalReceived)}</span>
+            <span>Jantares: {formatEuro(totals.dinnersReceived)}</span>
+            <span>Saídas: {formatEuro(totals.totalExpenses)}</span>
           </div>
         </div>
+
+        {debtsCount > 0 && (
+          <Link
+            to="/atrasados"
+            className="flex items-center justify-between gap-3 rounded-2xl border border-brand-red/25 bg-brand-red/[0.06] px-4 py-3"
+          >
+            <div className="min-w-0">
+              <p className="text-[14px] font-bold text-brand-red">Atrasados de épocas anteriores</p>
+              <p className="text-[12px] text-black/50 dark:text-white/50">
+                {debtsCount} mensalidade{debtsCount === 1 ? '' : 's'} por cobrar
+              </p>
+            </div>
+            <span className="shrink-0 text-[15px] font-extrabold text-brand-red">
+              {formatEuro(debtsTotal)}
+            </span>
+          </Link>
+        )}
 
         <div className="rounded-2xl border border-black/[0.06] p-4 dark:border-white/10">
           <div className="mb-2 flex items-center justify-between">
@@ -92,6 +119,23 @@ export function Dashboard() {
             </ul>
           )}
         </div>
+
+        {nextDinner && (
+          <Link
+            to={`/jantares/${nextDinner.id}`}
+            className="rounded-2xl border border-black/[0.06] p-4 dark:border-white/10"
+          >
+            <p className="text-[11px] font-medium uppercase text-black/40 dark:text-white/40">
+              Último jantar
+            </p>
+            <p className="mt-0.5 text-[15px] font-bold">vs {nextDinner.opponent || 'Adversário a definir'}</p>
+            <p className="text-[12px] text-black/50 dark:text-white/50">
+              {formatDinnerDate(nextDinner.date)} ·{' '}
+              {summarizeDinner(nextDinner).players + summarizeDinner(nextDinner).guests} presenças ·{' '}
+              falta {formatEuro(summarizeDinner(nextDinner).missing)}
+            </p>
+          </Link>
+        )}
 
         <Link
           to="/jogadores"

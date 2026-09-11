@@ -1,18 +1,34 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Header } from '../components/Header'
 import { useData } from '../lib/DataContext'
-import { exportBackup, importBackup, resetData } from '../lib/storage'
-import type { SeasonData } from '../types'
+import { buildCarriedDebts, formatEuro, openDebts, seasonFinalBalance } from '../lib/calc'
+import { exportBackup, importBackup, resetData, startYearFromLabel } from '../lib/storage'
+
+function nextSeasonLabel(startYear: number) {
+  const next = startYear + 1
+  return `${next}/${String(next + 1).slice(2)}`
+}
 
 export function Settings() {
-  const { data, season, setData, setMonthlyFee } = useData()
+  const { data, season, setData, setMonthlyFee, setDinnerFees, createSeason } = useData()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [feeInput, setFeeInput] = useState(String(season.monthlyFee))
+  const [playerFeeInput, setPlayerFeeInput] = useState(String(season.dinnerPlayerFee))
+  const [guestFeeInput, setGuestFeeInput] = useState(String(season.dinnerGuestFee))
   const [importMsg, setImportMsg] = useState<string | null>(null)
   const [confirmReset, setConfirmReset] = useState(false)
   const [showNewSeason, setShowNewSeason] = useState(false)
   const [newSeasonLabel, setNewSeasonLabel] = useState('')
+  const [carryPlayers, setCarryPlayers] = useState(true)
+  const [carryBalance, setCarryBalance] = useState(true)
+  const [carryDebts, setCarryDebts] = useState(true)
   const [pinDraft, setPinDraft] = useState('')
+
+  const pendingDebts = useMemo(() => buildCarriedDebts(season), [season])
+  const pendingTotal = pendingDebts.reduce((sum, d) => sum + d.amount, 0)
+  const finalBalance = useMemo(() => seasonFinalBalance(season), [season])
+  const openDebtCount = openDebts(season).length
 
   function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -26,24 +42,27 @@ export function Settings() {
     e.target.value = ''
   }
 
+  function openNewSeason() {
+    setNewSeasonLabel(nextSeasonLabel(season.startYear))
+    setCarryPlayers(true)
+    setCarryBalance(true)
+    setCarryDebts(true)
+    setShowNewSeason(true)
+  }
+
   function handleCreateSeason() {
-    if (!newSeasonLabel.trim()) return
-    const newSeason: SeasonData = {
-      id: `season-${Date.now()}`,
-      label: newSeasonLabel.trim(),
+    const label = newSeasonLabel.trim()
+    if (!label) return
+    createSeason({
+      label,
+      startYear: startYearFromLabel(label),
       monthlyFee: season.monthlyFee,
-      openingBalance: 0,
-      players: season.players
-        .filter((p) => p.active)
-        .map((p) => ({ id: p.id, name: p.name, active: true, payments: {} })),
-      expenses: [],
-      confirmedBalances: {},
-    }
-    setData((prev) => ({
-      ...prev,
-      seasons: [...prev.seasons, newSeason],
-      currentSeasonId: newSeason.id,
-    }))
+      dinnerPlayerFee: season.dinnerPlayerFee,
+      dinnerGuestFee: season.dinnerGuestFee,
+      carryPlayers,
+      carryBalance,
+      carryDebts,
+    })
     setShowNewSeason(false)
     setNewSeasonLabel('')
   }
@@ -94,24 +113,64 @@ export function Settings() {
 
           {!showNewSeason ? (
             <button
-              onClick={() => setShowNewSeason(true)}
+              onClick={openNewSeason}
               className="mt-3 w-full rounded-xl bg-black/[0.04] py-2.5 text-sm font-semibold text-black/60 dark:bg-white/10 dark:text-white/60"
             >
               Criar nova época
             </button>
           ) : (
             <div className="mt-3 rounded-xl bg-black/[0.03] p-3 dark:bg-white/5">
-              <input
-                type="text"
-                value={newSeasonLabel}
-                onChange={(e) => setNewSeasonLabel(e.target.value)}
-                placeholder="Ex: 2026/27"
-                className="mb-2 w-full rounded-lg border border-black/10 px-3 py-2 text-[14px] dark:border-white/15 dark:bg-white/5"
-              />
-              <p className="mb-2 text-[12px] text-black/40 dark:text-white/40">
-                Os jogadores ativos são transferidos para a nova época, sem histórico de pagamentos.
-              </p>
-              <div className="flex gap-2">
+              <label className="mb-2 block text-sm">
+                <span className="mb-1 block text-black/50 dark:text-white/50">Nome da época</span>
+                <input
+                  type="text"
+                  value={newSeasonLabel}
+                  onChange={(e) => setNewSeasonLabel(e.target.value)}
+                  placeholder="Ex: 2026/27"
+                  className="w-full rounded-lg border border-black/10 px-3 py-2 text-[14px] dark:border-white/15 dark:bg-white/5"
+                />
+                <span className="mt-1 block text-[11px] text-black/40 dark:text-white/40">
+                  Arranca em setembro de {startYearFromLabel(newSeasonLabel || season.label)}.
+                </span>
+              </label>
+
+              <label className="flex items-start gap-2 py-1.5 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={carryPlayers}
+                  onChange={(e) => setCarryPlayers(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-[#a41f24]"
+                />
+                <span>
+                  Transportar os {season.players.filter((p) => p.active).length} jogadores ativos
+                  (sem histórico de pagamentos)
+                </span>
+              </label>
+
+              <label className="flex items-start gap-2 py-1.5 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={carryBalance}
+                  onChange={(e) => setCarryBalance(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-[#a41f24]"
+                />
+                <span>Começar com o saldo em caixa de {season.label}: {formatEuro(finalBalance)}</span>
+              </label>
+
+              <label className="flex items-start gap-2 py-1.5 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={carryDebts}
+                  onChange={(e) => setCarryDebts(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-[#a41f24]"
+                />
+                <span>
+                  Transportar {pendingDebts.length} mensalidade{pendingDebts.length === 1 ? '' : 's'} em
+                  atraso ({formatEuro(pendingTotal)}) para cobrar na nova época
+                </span>
+              </label>
+
+              <div className="mt-3 flex gap-2">
                 <button
                   onClick={() => setShowNewSeason(false)}
                   className="flex-1 rounded-lg bg-black/[0.05] py-2 text-sm font-semibold dark:bg-white/10"
@@ -125,8 +184,69 @@ export function Settings() {
                   Criar
                 </button>
               </div>
+              <p className="mt-2 text-[11px] text-black/40 dark:text-white/40">
+                A época anterior fica guardada e podes voltar a ela a qualquer momento neste ecrã.
+              </p>
             </div>
           )}
+        </section>
+
+        <section className="rounded-2xl border border-black/[0.06] p-4 dark:border-white/10">
+          <h2 className="mb-3 text-[13px] font-bold uppercase tracking-wide text-black/40 dark:text-white/40">
+            Jantares
+          </h2>
+          <div className="flex gap-2">
+            <label className="min-w-0 flex-1 text-sm">
+              <span className="mb-1 block text-black/50 dark:text-white/50">€ jogador</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={playerFeeInput}
+                onChange={(e) => setPlayerFeeInput(e.target.value)}
+                className="w-full rounded-xl border border-black/10 px-3 py-2.5 text-[15px] outline-none focus:border-brand-red dark:border-white/15 dark:bg-white/5"
+              />
+            </label>
+            <label className="min-w-0 flex-1 text-sm">
+              <span className="mb-1 block text-black/50 dark:text-white/50">€ convidado</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={guestFeeInput}
+                onChange={(e) => setGuestFeeInput(e.target.value)}
+                className="w-full rounded-xl border border-black/10 px-3 py-2.5 text-[15px] outline-none focus:border-brand-red dark:border-white/15 dark:bg-white/5"
+              />
+            </label>
+            <button
+              onClick={() => {
+                const p = Number(playerFeeInput)
+                const g = Number(guestFeeInput)
+                if (p >= 0 && g >= 0) setDinnerFees(p, g)
+              }}
+              className="mt-[22px] h-[42px] shrink-0 rounded-xl bg-brand-red px-4 text-sm font-semibold text-white"
+            >
+              Guardar
+            </button>
+          </div>
+          <p className="mt-2 text-[12px] text-black/40 dark:text-white/40">
+            Valores usados nos jantares novos. Cada jantar guarda os preços praticados nessa data.
+          </p>
+        </section>
+
+        <section className="rounded-2xl border border-black/[0.06] p-4 dark:border-white/10">
+          <h2 className="mb-2 text-[13px] font-bold uppercase tracking-wide text-black/40 dark:text-white/40">
+            Pagamentos em atraso
+          </h2>
+          <p className="mb-3 text-[13px] text-black/50 dark:text-white/50">
+            {openDebtCount > 0
+              ? `${openDebtCount} mensalidade${openDebtCount === 1 ? '' : 's'} de épocas anteriores por cobrar.`
+              : 'Sem atrasados de épocas anteriores por cobrar.'}
+          </p>
+          <Link
+            to="/atrasados"
+            className="block rounded-xl bg-black/[0.04] py-2.5 text-center text-sm font-semibold text-black/60 dark:bg-white/10 dark:text-white/60"
+          >
+            Abrir atrasados
+          </Link>
         </section>
 
         <section className="rounded-2xl border border-black/[0.06] p-4 dark:border-white/10">
@@ -174,8 +294,8 @@ export function Settings() {
             Relatórios
           </h2>
           <p className="mb-3 text-[13px] text-black/50 dark:text-white/50">
-            Exporta o mapa de mensalidades, despesas e saldo para partilhar, imprimir ou continuar
-            a trabalhar noutro programa.
+            Exporta o mapa de mensalidades, jantares, despesas e saldo para partilhar, imprimir ou
+            continuar a trabalhar noutro programa.
           </p>
           <div className="flex gap-2">
             <button
@@ -231,7 +351,8 @@ export function Settings() {
           ) : (
             <div>
               <p className="mb-3 text-[13px] text-black/50 dark:text-white/50">
-                Isto apaga tudo o que alteraste e volta aos dados iniciais importados do documento. Confirmas?
+                Isto apaga tudo o que alteraste (incluindo épocas novas e jantares) e volta aos dados
+                iniciais importados do documento. Confirmas?
               </p>
               <div className="flex gap-2">
                 <button

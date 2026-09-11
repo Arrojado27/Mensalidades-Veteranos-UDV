@@ -1,11 +1,15 @@
 import type { ExpenseItem, MonthKey, Player, PaymentEntry, SeasonData } from '../types'
-import { SEASON_MONTHS } from '../types'
+import {
+  DEFAULT_DINNER_GUEST_FEE,
+  DEFAULT_DINNER_PLAYER_FEE,
+  MONTH_TEMPLATE,
+} from '../types'
 
 /**
  * Notação compacta usada para transcrever o mapa de mensalidades 2025/26:
  * 'MB' = pago por Multibanco, 'E' = pago em numerário (€),
  * '.' = por pagar, 'x' = isento/não aplicável (fora do grupo nesse mês).
- * A ordem segue sempre SEASON_MONTHS (Set..Jun).
+ * A ordem segue sempre MONTH_TEMPLATE (Set..Jun).
  */
 type Token = 'MB' | 'E' | '.' | 'x'
 
@@ -14,7 +18,7 @@ function buildPayments(
   overrides?: Partial<Record<MonthKey, Partial<PaymentEntry>>>,
 ): Player['payments'] {
   const payments: Player['payments'] = {}
-  SEASON_MONTHS.forEach((m, i) => {
+  MONTH_TEMPLATE.forEach((m, i) => {
     const t = tokens[i]
     let entry: PaymentEntry
     if (t === 'MB') entry = { status: 'paid', method: 'mb' }
@@ -135,10 +139,15 @@ export function createSeedSeason(): SeasonData {
   return {
     id: 'season-2025-26',
     label: '2025/26',
+    startYear: 2025,
     monthlyFee: 20,
+    dinnerPlayerFee: DEFAULT_DINNER_PLAYER_FEE,
+    dinnerGuestFee: DEFAULT_DINNER_GUEST_FEE,
     openingBalance: 0,
     players,
     expenses,
+    dinners: [],
+    carriedDebts: [],
     confirmedBalances,
   }
 }

@@ -4,6 +4,9 @@ import { BottomNav } from './components/BottomNav'
 import { LockScreen } from './components/LockScreen'
 import { DataProvider, useData } from './lib/DataContext'
 import { Dashboard } from './pages/Dashboard'
+import { Debts } from './pages/Debts'
+import { DinnerDetail } from './pages/DinnerDetail'
+import { Dinners } from './pages/Dinners'
 import { Expenses } from './pages/Expenses'
 import { PlayerDetail } from './pages/PlayerDetail'
 import { Players } from './pages/Players'
@@ -46,6 +49,9 @@ function AppShell() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/jogadores" element={<Players />} />
         <Route path="/jogadores/:playerId" element={<PlayerDetail />} />
+        <Route path="/jantares" element={<Dinners />} />
+        <Route path="/jantares/:dinnerId" element={<DinnerDetail />} />
+        <Route path="/atrasados" element={<Debts />} />
         <Route path="/despesas" element={<Expenses />} />
         <Route path="/definicoes" element={<Settings />} />
       </Routes>

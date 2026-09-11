@@ -1,20 +1,29 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Header } from '../components/Header'
 import { useData } from '../lib/DataContext'
 import {
   computeLedgerBalance,
+  debtsIncomeForMonth,
+  dinnersCostForMonth,
+  dinnersForMonth,
+  dinnersIncomeForMonth,
   expensesForMonth,
+  formatDinnerDate,
   formatEuro,
   getCurrentMonthKey,
   monthExpensesTotal,
+  monthOutflowTotal,
+  seasonMonths,
   summarizeMonth,
 } from '../lib/calc'
-import { SEASON_MONTHS } from '../types'
+import { MONTH_KEYS } from '../types'
 import type { MonthKey } from '../types'
 
 export function Expenses() {
   const { season, addExpense, removeExpense, setConfirmedBalance } = useData()
-  const currentMonth = getCurrentMonthKey() ?? SEASON_MONTHS[SEASON_MONTHS.length - 1].key
+  const months = useMemo(() => seasonMonths(season), [season])
+  const currentMonth = getCurrentMonthKey(season) ?? MONTH_KEYS[MONTH_KEYS.length - 1]
   const [month, setMonth] = useState<MonthKey>(currentMonth)
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
@@ -22,8 +31,14 @@ export function Expenses() {
   const [showManualAdjust, setShowManualAdjust] = useState(false)
 
   const items = useMemo(() => expensesForMonth(season, month), [season, month])
-  const total = monthExpensesTotal(season, month)
-  const received = summarizeMonth(season, month).totalReceived
+  const dinners = useMemo(() => dinnersForMonth(season, month), [season, month])
+  const expensesTotal = monthExpensesTotal(season, month)
+  const dinnerCost = dinnersCostForMonth(season, month)
+  const outflow = monthOutflowTotal(season, month)
+  const feesReceived = summarizeMonth(season, month).totalReceived
+  const dinnerIncome = dinnersIncomeForMonth(season, month)
+  const debtIncome = debtsIncomeForMonth(season, month)
+  const received = feesReceived + dinnerIncome + debtIncome
   const confirmedBalance = season.confirmedBalances[month]
   const ledgerBalance = useMemo(() => computeLedgerBalance(season, month), [season, month])
 
@@ -32,7 +47,7 @@ export function Expenses() {
       <Header title="Despesas & Saldo" subtitle={`Época ${season.label}`} />
 
       <div className="flex gap-2 overflow-x-auto px-4 pt-4 pb-1">
-        {SEASON_MONTHS.map((m) => (
+        {months.map((m) => (
           <button
             key={m.key}
             onClick={() => setMonth(m.key)}
@@ -50,12 +65,21 @@ export function Expenses() {
       <div className="flex flex-col gap-4 px-4 pt-3">
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl border border-black/[0.06] p-3.5 dark:border-white/10">
-            <p className="text-[11px] font-medium uppercase text-black/40 dark:text-white/40">Recebido no mês</p>
+            <p className="text-[11px] font-medium uppercase text-black/40 dark:text-white/40">Entrou no mês</p>
             <p className="mt-0.5 text-lg font-bold text-emerald-600">{formatEuro(received)}</p>
+            <p className="mt-1 text-[11px] leading-tight text-black/40 dark:text-white/40">
+              {formatEuro(feesReceived)} mensalidades
+              {dinnerIncome > 0 && ` · ${formatEuro(dinnerIncome)} jantares`}
+              {debtIncome > 0 && ` · ${formatEuro(debtIncome)} atrasados`}
+            </p>
           </div>
           <div className="rounded-2xl border border-black/[0.06] p-3.5 dark:border-white/10">
-            <p className="text-[11px] font-medium uppercase text-black/40 dark:text-white/40">Despesas do mês</p>
-            <p className="mt-0.5 text-lg font-bold text-brand-red">{formatEuro(total)}</p>
+            <p className="text-[11px] font-medium uppercase text-black/40 dark:text-white/40">Saiu no mês</p>
+            <p className="mt-0.5 text-lg font-bold text-brand-red">{formatEuro(outflow)}</p>
+            <p className="mt-1 text-[11px] leading-tight text-black/40 dark:text-white/40">
+              {formatEuro(expensesTotal)} despesas
+              {dinnerCost > 0 && ` · ${formatEuro(dinnerCost)} jantares`}
+            </p>
           </div>
         </div>
 
@@ -81,7 +105,22 @@ export function Expenses() {
                 </div>
               </li>
             ))}
-            {items.length === 0 && (
+            {dinners
+              .filter((d) => d.cost != null && d.cost > 0)
+              .map((d) => (
+                <li key={d.id} className="flex items-center justify-between gap-3 py-2.5">
+                  <Link to={`/jantares/${d.id}`} className="min-w-0 flex-1">
+                    <span className="block truncate text-[14px]">
+                      Jantar {formatDinnerDate(d.date)} · vs {d.opponent || 'adversário'}
+                    </span>
+                    <span className="text-[11px] text-black/40 dark:text-white/40">
+                      registado na página dos jantares
+                    </span>
+                  </Link>
+                  <span className="shrink-0 text-[14px] font-semibold">{formatEuro(d.cost!)}</span>
+                </li>
+              ))}
+            {items.length === 0 && dinnerCost === 0 && (
               <li className="py-4 text-center text-sm text-black/40 dark:text-white/40">
                 Sem despesas registadas.
               </li>
@@ -128,7 +167,7 @@ export function Expenses() {
           </p>
           <p className="mt-0.5 text-2xl font-extrabold">{formatEuro(ledgerBalance)}</p>
           <p className="mt-1 text-[12px] text-white/80">
-            Atualiza-se sozinho sempre que adicionas ou removes uma despesa
+            Inclui mensalidades, jantares, atrasados cobrados e todas as despesas
             {confirmedBalance != null ? ' (com um ajuste manual aplicado a este mês)' : ''}.
           </p>
         </div>

@@ -11,7 +11,8 @@ jogadores, despesas e saldo do grupo, época a época.
 
 Os dados da época **2025/26** foram importados do mapa de mensalidades em papel/Excel:
 40 jogadores, histórico mês a mês (Set a Jun), despesas e saldos confirmados de
-dezembro a junho. Mensalidade definida em 20€/mês.
+dezembro a junho. Mensalidade definida em 20€/mês; jantares a 10€ (jogador) e 18€
+(convidado).
 
 ## Como correr localmente
 
@@ -53,5 +54,23 @@ Cloudflare Pages. Basta apontar o serviço escolhido para esta pasta e o comando
   Definições regularmente (e sobretudo antes de trocar de telemóvel). O ficheiro
   `.json` pode ser importado de volta em qualquer altura.
 - **PIN**: opcional, em Definições, para bloquear o acesso à app.
-- **Nova época**: em Definições, "Criar nova época" transfere os jogadores ativos
-  sem histórico de pagamentos, para começares a época seguinte do zero.
+- **Nova época**: em Definições, "Criar nova época" cria a época seguinte (o nome e os
+  meses são sugeridos automaticamente: 2026/27 arranca em setembro de 2026). Podes
+  escolher o que transita:
+  - os jogadores ativos, sem histórico de pagamentos;
+  - o saldo em caixa no fim da época anterior;
+  - os meses que ficaram por pagar, que passam a ser **pagamentos em atraso** a cobrar.
+  A época anterior fica guardada e pode ser consultada a qualquer momento no seletor de
+  época, em Definições.
+- **Pagamentos em atraso**: ecrã próprio (atalho no Início e em Definições) com o que cada
+  jogador deve de épocas anteriores. Ao registar "Recebi", escolhes o valor, se foi em
+  numerário ou MB e em que mês desta época entrou na caixa. O mapa da época anterior não é
+  alterado — o dinheiro entra na caixa da época atual.
+- **Jantares**: página própria com um jantar por linha (data + equipa adversária). Dentro de
+  cada jantar apontas quem vai — jogadores do grupo (10€ por omissão) e convidados (18€) —
+  e marcas quem já pagou e como. O custo do restaurante, se o preencheres, entra
+  automaticamente nas despesas do mês do jantar. Os preços por omissão mudam-se em
+  Definições; cada jantar guarda os preços praticados nessa data.
+- **Jogadores**: botão "+" para adicionar; em "Gerir" (lista de jogadores) podes mudar o nome
+  ou remover. Para quem apenas saiu do grupo, desliga antes "No grupo atualmente" na ficha
+  dele — assim o histórico não se perde.

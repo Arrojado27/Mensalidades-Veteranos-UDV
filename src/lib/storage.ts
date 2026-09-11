@@ -1,10 +1,15 @@
 import type { AppData, SeasonData } from '../types'
-import { SEASON_MONTHS } from '../types'
+import {
+  DEFAULT_DINNER_GUEST_FEE,
+  DEFAULT_DINNER_PLAYER_FEE,
+  DEFAULT_SEASON_START_YEAR,
+  MONTH_KEYS,
+} from '../types'
 import { createSeedSeason } from '../data/seed'
 import { monthExpensesTotal, summarizeMonth } from './calc'
 
 const STORAGE_KEY = 'udv-veteranos-mensalidades-v1'
-const DATA_VERSION = 2
+const DATA_VERSION = 3
 
 function createInitialData(): AppData {
   const season = createSeedSeason()
@@ -12,6 +17,30 @@ function createInitialData(): AppData {
     version: DATA_VERSION,
     seasons: [season],
     currentSeasonId: season.id,
+  }
+}
+
+/** Ano de arranque a partir do rótulo da época ("2025/26" -> 2025). */
+export function startYearFromLabel(label: string): number {
+  const match = /(\d{4})/.exec(label)
+  return match ? Number(match[1]) : DEFAULT_SEASON_START_YEAR
+}
+
+/**
+ * Garante que uma época vinda de um backup antigo tem todos os campos novos
+ * (ano de arranque, preços dos jantares, lista de jantares e dívidas transitadas).
+ */
+function normalizeSeason(season: SeasonData): SeasonData {
+  return {
+    ...season,
+    startYear: season.startYear ?? startYearFromLabel(season.label),
+    dinnerPlayerFee: season.dinnerPlayerFee ?? DEFAULT_DINNER_PLAYER_FEE,
+    dinnerGuestFee: season.dinnerGuestFee ?? DEFAULT_DINNER_GUEST_FEE,
+    dinners: season.dinners ?? [],
+    carriedDebts: season.carriedDebts ?? [],
+    expenses: season.expenses ?? [],
+    players: season.players ?? [],
+    confirmedBalances: season.confirmedBalances ?? {},
   }
 }
 
@@ -24,23 +53,26 @@ function createInitialData(): AppData {
  */
 function migrateSeasonToV2(season: SeasonData): SeasonData {
   const confirmedBalances: SeasonData['confirmedBalances'] = {}
-  for (const m of SEASON_MONTHS) {
-    const endValue = season.confirmedBalances[m.key]
+  for (const key of MONTH_KEYS) {
+    const endValue = season.confirmedBalances[key]
     if (endValue === undefined) continue
-    const income = summarizeMonth(season, m.key).totalReceived
-    const expenses = monthExpensesTotal(season, m.key)
-    confirmedBalances[m.key] = endValue - income + expenses
+    const income = summarizeMonth(season, key).totalReceived
+    const expenses = monthExpensesTotal(season, key)
+    confirmedBalances[key] = endValue - income + expenses
   }
   return { ...season, confirmedBalances }
 }
 
 function migrateData(data: AppData): AppData {
-  if (data.version >= DATA_VERSION) return data
-  return {
-    ...data,
-    version: DATA_VERSION,
-    seasons: data.seasons.map(migrateSeasonToV2),
+  const version = data.version ?? 1
+  if (version >= DATA_VERSION) {
+    // Mesmo já na versão atual, garante a forma dos dados (backups manuais, etc.).
+    return { ...data, seasons: data.seasons.map(normalizeSeason) }
   }
+  const seasons = data.seasons
+    .map(normalizeSeason)
+    .map((s) => (version < 2 ? migrateSeasonToV2(s) : s))
+  return { ...data, version: DATA_VERSION, seasons }
 }
 
 export function loadData(): AppData {
@@ -56,7 +88,7 @@ export function loadData(): AppData {
       return createInitialData()
     }
     const migrated = migrateData(parsed)
-    if (migrated !== parsed) saveData(migrated)
+    if ((parsed.version ?? 1) < DATA_VERSION) saveData(migrated)
     return migrated
   } catch {
     return createInitialData()

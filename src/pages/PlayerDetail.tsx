@@ -1,10 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { MonthChip } from '../components/MonthChip'
 import { PaymentEditorModal } from '../components/PaymentEditorModal'
 import { useData } from '../lib/DataContext'
-import { amountForEntry, formatEuro } from '../lib/calc'
-import { SEASON_MONTHS } from '../types'
+import { amountForEntry, formatEuro, seasonMonths } from '../lib/calc'
 import type { MonthKey } from '../types'
 
 export function PlayerDetail() {
@@ -14,6 +13,7 @@ export function PlayerDetail() {
   const [editingMonth, setEditingMonth] = useState<MonthKey | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
+  const months = useMemo(() => seasonMonths(season), [season])
   const player = season.players.find((p) => p.id === playerId)
 
   if (!player) {
@@ -27,11 +27,11 @@ export function PlayerDetail() {
     )
   }
 
-  const totalPaid = SEASON_MONTHS.reduce((sum, m) => {
+  const totalPaid = months.reduce((sum, m) => {
     const entry = player.payments[m.key]
     return sum + amountForEntry(entry?.status ?? 'pending', entry?.amount, season.monthlyFee)
   }, 0)
-  const pendingMonths = SEASON_MONTHS.filter((m) => (player.payments[m.key]?.status ?? 'pending') === 'pending')
+  const pendingMonths = months.filter((m) => (player.payments[m.key]?.status ?? 'pending') === 'pending')
 
   return (
     <div className="flex flex-1 flex-col pb-4">
@@ -72,7 +72,7 @@ export function PlayerDetail() {
             Mensalidades
           </h2>
           <ul className="divide-y divide-black/[0.05] px-4 dark:divide-white/10">
-            {SEASON_MONTHS.map((m) => {
+            {months.map((m) => {
               const entry = player.payments[m.key]
               return (
                 <li key={m.key} className="flex items-center justify-between gap-3 py-3">
@@ -102,7 +102,7 @@ export function PlayerDetail() {
       {editingMonth && (
         <PaymentEditorModal
           playerName={player.name}
-          monthLabel={`${SEASON_MONTHS.find((m) => m.key === editingMonth)?.label} ${SEASON_MONTHS.find((m) => m.key === editingMonth)?.year}`}
+          monthLabel={`${months.find((m) => m.key === editingMonth)?.label} ${months.find((m) => m.key === editingMonth)?.year}`}
           fee={season.monthlyFee}
           entry={player.payments[editingMonth]}
           onClose={() => setEditingMonth(null)}
