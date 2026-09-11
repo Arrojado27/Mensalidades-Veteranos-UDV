@@ -2,7 +2,14 @@ import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Header } from '../components/Header'
 import { useData } from '../lib/DataContext'
-import { buildCarriedDebts, formatEuro, openDebts, seasonFinalBalance } from '../lib/calc'
+import {
+  amountToInput,
+  buildCarriedDebts,
+  formatEuro,
+  openDebts,
+  parseAmount,
+  seasonFinalBalance,
+} from '../lib/calc'
 import { exportBackup, importBackup, resetData, startYearFromLabel } from '../lib/storage'
 
 function nextSeasonLabel(startYear: number) {
@@ -13,9 +20,9 @@ function nextSeasonLabel(startYear: number) {
 export function Settings() {
   const { data, season, setData, setMonthlyFee, setDinnerFees, createSeason } = useData()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [feeInput, setFeeInput] = useState(String(season.monthlyFee))
-  const [playerFeeInput, setPlayerFeeInput] = useState(String(season.dinnerPlayerFee))
-  const [guestFeeInput, setGuestFeeInput] = useState(String(season.dinnerGuestFee))
+  const [feeInput, setFeeInput] = useState(amountToInput(season.monthlyFee))
+  const [playerFeeInput, setPlayerFeeInput] = useState(amountToInput(season.dinnerPlayerFee))
+  const [guestFeeInput, setGuestFeeInput] = useState(amountToInput(season.dinnerGuestFee))
   const [importMsg, setImportMsg] = useState<string | null>(null)
   const [confirmReset, setConfirmReset] = useState(false)
   const [showNewSeason, setShowNewSeason] = useState(false)
@@ -93,7 +100,7 @@ export function Settings() {
             <span className="mb-1 block text-black/50 dark:text-white/50">Valor da mensalidade</span>
             <div className="flex gap-2">
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
                 value={feeInput}
                 onChange={(e) => setFeeInput(e.target.value)}
@@ -101,8 +108,8 @@ export function Settings() {
               />
               <button
                 onClick={() => {
-                  const v = Number(feeInput)
-                  if (v > 0) setMonthlyFee(v)
+                  const v = parseAmount(feeInput)
+                  if (v != null && v > 0) setMonthlyFee(v)
                 }}
                 className="rounded-xl bg-brand-red px-4 text-sm font-semibold text-white"
               >
@@ -199,7 +206,7 @@ export function Settings() {
             <label className="min-w-0 flex-1 text-sm">
               <span className="mb-1 block text-black/50 dark:text-white/50">€ jogador</span>
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
                 value={playerFeeInput}
                 onChange={(e) => setPlayerFeeInput(e.target.value)}
@@ -209,7 +216,7 @@ export function Settings() {
             <label className="min-w-0 flex-1 text-sm">
               <span className="mb-1 block text-black/50 dark:text-white/50">€ convidado</span>
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
                 value={guestFeeInput}
                 onChange={(e) => setGuestFeeInput(e.target.value)}
@@ -218,9 +225,11 @@ export function Settings() {
             </label>
             <button
               onClick={() => {
-                const p = Number(playerFeeInput)
-                const g = Number(guestFeeInput)
-                if (p >= 0 && g >= 0) setDinnerFees(p, g)
+                const playerFee = parseAmount(playerFeeInput)
+                const guestFee = parseAmount(guestFeeInput)
+                if (playerFee != null && guestFee != null && playerFee >= 0 && guestFee >= 0) {
+                  setDinnerFees(playerFee, guestFee)
+                }
               }}
               className="mt-[22px] h-[42px] shrink-0 rounded-xl bg-brand-red px-4 text-sm font-semibold text-white"
             >

@@ -14,6 +14,7 @@ import {
   getCurrentMonthKey,
   monthExpensesTotal,
   monthOutflowTotal,
+  parseAmount,
   seasonMonths,
   summarizeMonth,
 } from '../lib/calc'
@@ -129,7 +130,7 @@ export function Expenses() {
           <form
             onSubmit={(e) => {
               e.preventDefault()
-              const value = Number(amount)
+              const value = parseAmount(amount)
               if (!description.trim() || !value) return
               addExpense({ month, description: description.trim(), amount: value })
               setDescription('')
@@ -145,7 +146,7 @@ export function Expenses() {
               className="min-w-0 flex-1 rounded-xl border border-black/10 px-3 py-2 text-[14px] outline-none focus:border-brand-red dark:border-white/15 dark:bg-white/5"
             />
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
@@ -187,17 +188,18 @@ export function Expenses() {
               </h2>
               <div className="flex gap-2">
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
                   value={balanceInput}
                   onChange={(e) => setBalanceInput(e.target.value)}
-                  placeholder={String(ledgerBalance)}
+                  placeholder={formatEuro(ledgerBalance)}
                   className="min-w-0 flex-1 rounded-xl border border-black/10 px-3 py-2.5 text-[15px] outline-none focus:border-brand-red dark:border-white/15 dark:bg-white/5"
                 />
                 <button
                   onClick={() => {
-                    if (balanceInput.trim() === '') return
-                    setConfirmedBalance(month, Number(balanceInput))
+                    const value = parseAmount(balanceInput)
+                    if (value === undefined) return
+                    setConfirmedBalance(month, value)
                     setBalanceInput('')
                   }}
                   className="rounded-xl bg-brand-red px-4 text-sm font-semibold text-white"

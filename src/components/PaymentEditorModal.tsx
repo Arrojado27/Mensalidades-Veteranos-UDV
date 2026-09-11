@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { amountToInput, parseAmount } from '../lib/calc'
 import type { PaymentEntry, PaymentMethod, PaymentStatus } from '../types'
 
 export function PaymentEditorModal({
@@ -18,11 +19,11 @@ export function PaymentEditorModal({
 }) {
   const [status, setStatus] = useState<PaymentStatus>(entry?.status ?? 'pending')
   const [method, setMethod] = useState<PaymentMethod>(entry?.method ?? 'mb')
-  const [amount, setAmount] = useState<string>(entry?.amount != null ? String(entry.amount) : '')
+  const [amount, setAmount] = useState<string>(amountToInput(entry?.amount))
   const [note, setNote] = useState(entry?.note ?? '')
 
   function handleSave() {
-    const parsedAmount = amount.trim() === '' ? undefined : Number(amount)
+    const parsedAmount = parseAmount(amount)
     const next: PaymentEntry = {
       status,
       ...(status === 'paid' ? { method, amount: parsedAmount } : {}),
@@ -96,7 +97,7 @@ export function PaymentEditorModal({
                 Valor pago (mensalidade: {fee}€)
               </span>
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
                 placeholder={String(fee)}
                 value={amount}

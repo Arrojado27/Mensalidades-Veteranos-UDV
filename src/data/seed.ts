@@ -124,7 +124,8 @@ const expenses: ExpenseItem[] = [
 // Saldo TRANSITADO para cada mês (saldo real confirmado no documento original,
 // menos as receitas/despesas desse mês) — ver computeLedgerBalance em calc.ts.
 // Saldo a fim do mês, tal como no documento original: dez 2940, jan 3127,
-// fev 3112, mar 3194, abr 3825, mai 3945, jun 4085.
+// fev 3112, mar 3194, abr 3825, mai 3945. Junho fecha em 4072,73 — o saldo real
+// em caixa no fim da época, 12,27 € abaixo do que o mapa dava (reconciliação).
 const confirmedBalances: Partial<Record<MonthKey, number>> = {
   dez: 2600,
   jan: 2900,
@@ -132,7 +133,7 @@ const confirmedBalances: Partial<Record<MonthKey, number>> = {
   mar: 2852,
   abr: 3605,
   mai: 3445,
-  jun: 4065,
+  jun: 4052.73,
 }
 
 export function createSeedSeason(): SeasonData {

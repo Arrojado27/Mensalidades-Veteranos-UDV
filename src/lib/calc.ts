@@ -222,6 +222,11 @@ export function debtsIncomeForMonth(season: SeasonData, month: MonthKey): number
 
 // ------------------------------------------------------------ despesas/saldo
 
+/** Evita cêntimos fantasma (0,1 + 0,2) quando se somam valores em euros. */
+export function roundCents(value: number): number {
+  return Math.round(value * 100) / 100
+}
+
 export function expensesForMonth(season: SeasonData, month: MonthKey) {
   return season.expenses.filter((e) => e.month === month)
 }
@@ -276,7 +281,7 @@ export function computeLedgerBalance(season: SeasonData, uptoMonth: MonthKey): n
   let balance = season.openingBalance
   for (const key of MONTH_KEYS) {
     const carryIn = season.confirmedBalances[key] ?? balance
-    balance = carryIn + monthIncomeTotal(season, key) - monthOutflowTotal(season, key)
+    balance = roundCents(carryIn + monthIncomeTotal(season, key) - monthOutflowTotal(season, key))
     if (key === uptoMonth) break
   }
   return balance
@@ -285,6 +290,25 @@ export function computeLedgerBalance(season: SeasonData, uptoMonth: MonthKey): n
 /** Saldo final da época (último mês). */
 export function seasonFinalBalance(season: SeasonData): number {
   return computeLedgerBalance(season, MONTH_KEYS[MONTH_KEYS.length - 1])
+}
+
+/**
+ * Lê um valor em euros escrito à mão, aceitando vírgula decimal (4072,73) e
+ * separador de milhares (4.072,73), como se escreve em Portugal.
+ * Devolve undefined se o campo estiver vazio ou não for um número.
+ */
+export function parseAmount(input: string): number | undefined {
+  let cleaned = input.trim().replace(/[\s€]/g, '')
+  if (cleaned === '') return undefined
+  if (cleaned.includes(',')) cleaned = cleaned.replace(/\./g, '').replace(',', '.')
+  const value = Number(cleaned)
+  return Number.isFinite(value) ? value : undefined
+}
+
+/** Escreve um número para dentro de um campo de euros (vírgula decimal). */
+export function amountToInput(value: number | undefined): string {
+  if (value == null) return ''
+  return String(value).replace('.', ',')
 }
 
 export function formatEuro(value: number) {

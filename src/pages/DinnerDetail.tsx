@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { MoneyInput } from '../components/MoneyInput'
 import { useData } from '../lib/DataContext'
 import { attendeeFee, formatDinnerDate, formatEuro, monthLabel, monthKeyForDate, summarizeDinner } from '../lib/calc'
 import type { DinnerAttendee } from '../types'
@@ -94,21 +95,17 @@ export function DinnerDetail() {
             <div className="grid grid-cols-2 gap-3">
               <label className="block text-sm">
                 <span className="mb-1 block text-black/50 dark:text-white/50">€ por jogador</span>
-                <input
-                  type="number"
-                  inputMode="decimal"
+                <MoneyInput
                   value={dinner.playerFee}
-                  onChange={(e) => updateDinner(dinner.id, { playerFee: Number(e.target.value) || 0 })}
+                  onChange={(v) => updateDinner(dinner.id, { playerFee: v ?? 0 })}
                   className="w-full rounded-xl border border-black/10 px-3 py-2.5 text-[15px] outline-none focus:border-brand-red dark:border-white/15 dark:bg-white/5"
                 />
               </label>
               <label className="block text-sm">
                 <span className="mb-1 block text-black/50 dark:text-white/50">€ por convidado</span>
-                <input
-                  type="number"
-                  inputMode="decimal"
+                <MoneyInput
                   value={dinner.guestFee}
-                  onChange={(e) => updateDinner(dinner.id, { guestFee: Number(e.target.value) || 0 })}
+                  onChange={(v) => updateDinner(dinner.id, { guestFee: v ?? 0 })}
                   className="w-full rounded-xl border border-black/10 px-3 py-2.5 text-[15px] outline-none focus:border-brand-red dark:border-white/15 dark:bg-white/5"
                 />
               </label>
@@ -117,16 +114,11 @@ export function DinnerDetail() {
               <span className="mb-1 block text-black/50 dark:text-white/50">
                 Custo do jantar (restaurante) — opcional
               </span>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={dinner.cost ?? ''}
-                onChange={(e) =>
-                  updateDinner(dinner.id, {
-                    cost: e.target.value === '' ? undefined : Number(e.target.value),
-                  })
-                }
+              <MoneyInput
+                value={dinner.cost}
+                onChange={(v) => updateDinner(dinner.id, { cost: v })}
                 placeholder="€"
+                ariaLabel="Custo do jantar"
                 className="w-full rounded-xl border border-black/10 px-3 py-2.5 text-[15px] outline-none focus:border-brand-red dark:border-white/15 dark:bg-white/5"
               />
               <span className="mt-1 block text-[12px] text-black/40 dark:text-white/40">

@@ -2,10 +2,12 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useData } from '../lib/DataContext'
 import {
+  amountToInput,
   formatEuro,
   getCurrentMonthKey,
   monthLabel,
   openDebts,
+  parseAmount,
   seasonMonths,
 } from '../lib/calc'
 import { MONTH_KEYS } from '../types'
@@ -21,7 +23,7 @@ export function Debts() {
   const [showAdd, setShowAdd] = useState(false)
   const [newPlayerId, setNewPlayerId] = useState('')
   const [newLabel, setNewLabel] = useState('')
-  const [newAmount, setNewAmount] = useState(String(season.monthlyFee))
+  const [newAmount, setNewAmount] = useState(amountToInput(season.monthlyFee))
 
   const months = useMemo(() => seasonMonths(season), [season])
   const open = useMemo(() => openDebts(season), [season])
@@ -47,7 +49,7 @@ export function Debts() {
 
   function openSettle(debt: CarriedDebt) {
     setSettling(debt)
-    setAmount(String(debt.amount))
+    setAmount(amountToInput(debt.amount))
     setMethod('cash')
     setMonth(getCurrentMonthKey(season) ?? MONTH_KEYS[0])
   }
@@ -183,7 +185,7 @@ export function Debts() {
                   className="min-w-0 flex-1 rounded-xl border border-black/10 px-3 py-2.5 text-[15px] outline-none focus:border-brand-red dark:border-white/15 dark:bg-white/5"
                 />
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
                   value={newAmount}
                   onChange={(e) => setNewAmount(e.target.value)}
@@ -201,7 +203,7 @@ export function Debts() {
                 <button
                   onClick={() => {
                     const player = sortedPlayers.find((p) => p.id === newPlayerId)
-                    const value = Number(newAmount)
+                    const value = parseAmount(newAmount)
                     if (!player || !value) return
                     const previous = season.carriedDebts[0]
                     addDebt({
@@ -247,7 +249,7 @@ export function Debts() {
             <label className="mb-3 block text-sm">
               <span className="mb-1 block text-black/50 dark:text-white/50">Valor recebido</span>
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
@@ -298,7 +300,7 @@ export function Debts() {
               </button>
               <button
                 onClick={() => {
-                  const value = Number(amount)
+                  const value = parseAmount(amount)
                   if (!value) return
                   settleDebt(settling.id, { month, method, amount: value })
                   setSettling(null)
