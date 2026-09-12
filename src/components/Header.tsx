@@ -63,20 +63,23 @@ export function StatTile({
 
 /**
  * Cinco variantes tiradas da paleta do clube — vermelho e dourado, cada um cheio
- * ou esbatido, mais um neutro. O jogador fica sempre com a mesma.
+ * ou esbatido, mais um neutro.
  */
 const AVATAR_VARIANTS = ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5']
 
-function variantForName(name: string) {
-  let hash = 0
-  for (let i = 0; i < name.length; i += 1) {
-    hash = (hash * 31 + name.charCodeAt(i)) % 100000
-  }
-  return AVATAR_VARIANTS[hash % AVATAR_VARIANTS.length]
-}
-
-/** Iniciais do jogador, no lugar de uma fotografia. */
-export function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
+/**
+ * Iniciais do jogador, no lugar de uma fotografia. A cor vem da posição na
+ * lista, para dois nomes seguidos nunca saírem iguais.
+ */
+export function Avatar({
+  name,
+  index = 0,
+  size = 'md',
+}: {
+  name: string
+  index?: number
+  size?: 'sm' | 'md'
+}) {
   // Primeira letra do primeiro nome e do apelido. Trata os nomes abreviados do
   // mapa ("A.Rocha" -> AR) e ignora alcunhas entre parênteses.
   const parts = name
@@ -89,7 +92,7 @@ export function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md'
   const box = size === 'sm' ? 'h-9 w-9 text-[12px]' : 'h-10 w-10 text-[13px]'
   return (
     <span
-      className={`avatar ${variantForName(name)} flex shrink-0 items-center justify-center rounded-full font-bold tracking-wide ${box}`}
+      className={`avatar ${AVATAR_VARIANTS[index % AVATAR_VARIANTS.length]} flex shrink-0 items-center justify-center rounded-full font-bold tracking-wide ${box}`}
     >
       {initials}
     </span>

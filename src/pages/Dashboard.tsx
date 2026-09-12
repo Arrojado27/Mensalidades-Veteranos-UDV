@@ -143,13 +143,13 @@ export function Dashboard() {
             </p>
           ) : (
             <ul className="mt-1 divide-y divide-line">
-              {pending.map((p) => (
+              {pending.map((p, index) => (
                 <li key={p.id} className="flex items-center gap-3 px-4 py-2.5">
                   <button
                     onClick={() => setEditing({ player: p, month: referenceMonth })}
                     className="flex min-w-0 flex-1 items-center gap-3 text-left"
                   >
-                    <Avatar name={p.name} />
+                    <Avatar name={p.name} index={index} />
                     <span className="min-w-0">
                       <span className="block truncate text-[14px] font-semibold">{p.name}</span>
                       <span className="block text-[11px] text-subtle">

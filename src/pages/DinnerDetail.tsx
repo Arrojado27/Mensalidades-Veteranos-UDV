@@ -112,9 +112,9 @@ export function DinnerDetail() {
           </div>
 
           <ul className="mt-2 divide-y divide-line">
-            {sortedAttendees.map((a) => (
+            {sortedAttendees.map((a, index) => (
               <li key={a.id} className="flex items-center gap-2.5 px-4 py-2.5">
-                <Avatar name={a.name} size="sm" />
+                <Avatar name={a.name} index={index} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className={`truncate text-[14px] font-semibold ${a.paid ? 'text-muted' : ''}`}>
                     {a.name}

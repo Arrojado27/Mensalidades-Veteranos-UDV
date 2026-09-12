@@ -92,13 +92,13 @@ export function Players() {
       </div>
 
       <ul className="mt-3 flex flex-1 flex-col gap-2 px-4">
-        {players.map((p) => (
+        {players.map((p, index) => (
           <li key={p.id} className="card flex items-center gap-2.5 p-3">
             <button
               onClick={() => navigate(`/jogadores/${p.id}`)}
               className="flex min-w-0 flex-1 items-center gap-3 text-left"
             >
-              <Avatar name={p.name} />
+              <Avatar name={p.name} index={index} />
               <span className="min-w-0 flex-1">
                 <span className="flex items-baseline justify-between gap-2">
                   <span className={`truncate text-[14px] font-semibold ${!p.active ? 'text-muted' : ''}`}>
