@@ -29,6 +29,11 @@ export function Dashboard() {
   const referenceMonth = currentMonthKey ?? MONTH_KEYS[MONTH_KEYS.length - 1]
   const referenceInfo = monthInfo(season, referenceMonth)
   const summary = useMemo(() => summarizeMonth(season, referenceMonth), [season, referenceMonth])
+  // Por ordem alfabética: é assim que se percorre o grupo a cobrar.
+  const pending = useMemo(
+    () => [...summary.pending].sort((a, b) => a.name.localeCompare(b.name, 'pt')),
+    [summary.pending],
+  )
   const balance = useMemo(() => computeLedgerBalance(season, referenceMonth), [season, referenceMonth])
   const totals = useMemo(() => seasonTotals(season), [season])
   const debtsTotal = useMemo(() => openDebtsTotal(season), [season])
@@ -141,7 +146,7 @@ export function Dashboard() {
             </p>
           ) : (
             <ul className="mt-1 divide-y divide-line">
-              {summary.pending.map((p) => (
+              {pending.map((p) => (
                 <li key={p.id} className="flex items-center gap-2 px-4 py-2.5">
                   <button
                     onClick={() => setEditing({ player: p, month: referenceMonth })}
