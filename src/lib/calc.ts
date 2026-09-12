@@ -1,5 +1,6 @@
 import type {
   CarriedDebt,
+  PaymentMethod,
   Dinner,
   DinnerAttendee,
   MonthInfo,
@@ -50,6 +51,28 @@ export function monthKeyForDate(season: SeasonData, isoDate: string): MonthKey {
 export function amountForEntry(status: string, amount: number | undefined, fee: number): number {
   if (status !== 'paid') return 0
   return amount ?? fee
+}
+
+/**
+ * Forma de pagamento que o jogador mais usou nesta época — serve de sugestão
+ * ao marcar um pagamento rápido, para não obrigar a escolher de cada vez.
+ */
+export function mostUsedMethod(player: Player, fallback: PaymentMethod = 'cash'): PaymentMethod {
+  const counts = new Map<PaymentMethod, number>()
+  for (const key of MONTH_KEYS) {
+    const entry = player.payments[key]
+    if (entry?.status !== 'paid' || !entry.method) continue
+    counts.set(entry.method, (counts.get(entry.method) ?? 0) + 1)
+  }
+  let best: PaymentMethod | undefined
+  let bestCount = 0
+  for (const [method, count] of counts) {
+    if (count > bestCount) {
+      best = method
+      bestCount = count
+    }
+  }
+  return best ?? fallback
 }
 
 export interface MonthSummary {

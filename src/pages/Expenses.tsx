@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Header } from '../components/Header'
+import { Header, StatTile } from '../components/Header'
 import { useData } from '../lib/DataContext'
 import {
   computeLedgerBalance,
@@ -14,8 +14,8 @@ import {
   getCurrentMonthKey,
   monthExpensesTotal,
   monthOutflowTotal,
-  parseAmount,
   seasonMonths,
+  parseAmount,
   summarizeMonth,
 } from '../lib/calc'
 import { MONTH_KEYS } from '../types'
@@ -42,20 +42,19 @@ export function Expenses() {
   const received = feesReceived + dinnerIncome + debtIncome
   const confirmedBalance = season.confirmedBalances[month]
   const ledgerBalance = useMemo(() => computeLedgerBalance(season, month), [season, month])
+  const monthName = months.find((m) => m.key === month)!
 
   return (
-    <div className="flex flex-1 flex-col pb-4">
-      <Header title="Despesas & Saldo" subtitle={`Época ${season.label}`} />
+    <div className="flex flex-1 flex-col">
+      <Header title="Despesas & Saldo" subtitle={`Época ${season.label}`} badge={monthName.label} />
 
-      <div className="flex gap-2 overflow-x-auto px-4 pt-4 pb-1">
+      <div className="flex gap-1.5 overflow-x-auto px-4 pb-1 pt-4">
         {months.map((m) => (
           <button
             key={m.key}
             onClick={() => setMonth(m.key)}
-            className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors ${
-              month === m.key
-                ? 'bg-brand-red text-white'
-                : 'bg-black/[0.05] text-black/50 dark:bg-white/10 dark:text-white/50'
+            className={`shrink-0 rounded-xl px-3.5 py-1.5 text-[13px] font-semibold transition-colors ${
+              month === m.key ? 'bg-brand-red text-white shadow-sm' : 'bg-ink/[0.05] text-muted'
             }`}
           >
             {m.label}
@@ -63,43 +62,59 @@ export function Expenses() {
         ))}
       </div>
 
-      <div className="flex flex-col gap-4 px-4 pt-3">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-black/[0.06] p-3.5 dark:border-white/10">
-            <p className="text-[11px] font-medium uppercase text-black/40 dark:text-white/40">Entrou no mês</p>
-            <p className="mt-0.5 text-lg font-bold text-emerald-600">{formatEuro(received)}</p>
-            <p className="mt-1 text-[11px] leading-tight text-black/40 dark:text-white/40">
-              {formatEuro(feesReceived)} mensalidades
-              {dinnerIncome > 0 && ` · ${formatEuro(dinnerIncome)} jantares`}
-              {debtIncome > 0 && ` · ${formatEuro(debtIncome)} atrasados`}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-black/[0.06] p-3.5 dark:border-white/10">
-            <p className="text-[11px] font-medium uppercase text-black/40 dark:text-white/40">Saiu no mês</p>
-            <p className="mt-0.5 text-lg font-bold text-brand-red">{formatEuro(outflow)}</p>
-            <p className="mt-1 text-[11px] leading-tight text-black/40 dark:text-white/40">
-              {formatEuro(expensesTotal)} despesas
-              {dinnerCost > 0 && ` · ${formatEuro(dinnerCost)} jantares`}
-            </p>
-          </div>
+      <div className="flex flex-col gap-3.5 px-4 pt-3">
+        {/* Saldo primeiro: é a pergunta a que este ecrã responde. */}
+        <div className="app-header rounded-[22px] p-5 shadow-lg">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-white/70">
+            Saldo no fim de {monthName.label} {monthName.year}
+          </p>
+          <p className="mt-1 text-[32px] font-extrabold leading-none tracking-tight">
+            {formatEuro(ledgerBalance)}
+          </p>
+          <p className="mt-2 text-[12px] text-white/75">
+            Mensalidades, jantares, atrasados cobrados e todas as despesas
+            {confirmedBalance != null ? ' · com ajuste manual neste mês' : ''}.
+          </p>
         </div>
 
-        <div className="rounded-2xl border border-black/[0.06] dark:border-white/10">
-          <div className="flex items-center justify-between px-4 pt-3.5">
-            <h2 className="text-[13px] font-bold uppercase tracking-wide text-black/40 dark:text-white/40">
-              Despesas
-            </h2>
-          </div>
-          <ul className="divide-y divide-black/[0.05] px-4 dark:divide-white/10">
+        <div className="grid grid-cols-2 gap-3">
+          <StatTile
+            label="Entrou"
+            value={formatEuro(received)}
+            tone="ok"
+            hint={[
+              `${formatEuro(feesReceived)} mensalidades`,
+              dinnerIncome > 0 ? `${formatEuro(dinnerIncome)} jantares` : '',
+              debtIncome > 0 ? `${formatEuro(debtIncome)} atrasados` : '',
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          />
+          <StatTile
+            label="Saiu"
+            value={formatEuro(outflow)}
+            tone="alert"
+            hint={[
+              `${formatEuro(expensesTotal)} despesas`,
+              dinnerCost > 0 ? `${formatEuro(dinnerCost)} jantares` : '',
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          />
+        </div>
+
+        <section className="card overflow-hidden">
+          <h2 className="section-title px-4 pt-4">Despesas do mês</h2>
+          <ul className="mt-1 divide-y divide-line">
             {items.map((e) => (
-              <li key={e.id} className="flex items-center justify-between gap-3 py-2.5">
+              <li key={e.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
                 <span className="truncate text-[14px]">{e.description}</span>
                 <div className="flex shrink-0 items-center gap-3">
                   <span className="text-[14px] font-semibold">{formatEuro(e.amount)}</span>
                   <button
                     onClick={() => removeExpense(e.id)}
                     aria-label="Remover despesa"
-                    className="text-black/30 dark:text-white/30"
+                    className="text-subtle"
                   >
                     ✕
                   </button>
@@ -109,24 +124,23 @@ export function Expenses() {
             {dinners
               .filter((d) => d.cost != null && d.cost > 0)
               .map((d) => (
-                <li key={d.id} className="flex items-center justify-between gap-3 py-2.5">
+                <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
                   <Link to={`/jantares/${d.id}`} className="min-w-0 flex-1">
                     <span className="block truncate text-[14px]">
                       Jantar {formatDinnerDate(d.date)} · vs {d.opponent || 'adversário'}
                     </span>
-                    <span className="text-[11px] text-black/40 dark:text-white/40">
-                      registado na página dos jantares
-                    </span>
+                    <span className="text-[11px] text-subtle">registado na página dos jantares</span>
                   </Link>
                   <span className="shrink-0 text-[14px] font-semibold">{formatEuro(d.cost!)}</span>
                 </li>
               ))}
             {items.length === 0 && dinnerCost === 0 && (
-              <li className="py-4 text-center text-sm text-black/40 dark:text-white/40">
-                Sem despesas registadas.
+              <li className="px-4 py-6 text-center text-[13px] text-muted">
+                Sem despesas registadas neste mês.
               </li>
             )}
           </ul>
+
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -136,14 +150,14 @@ export function Expenses() {
               setDescription('')
               setAmount('')
             }}
-            className="flex gap-2 px-4 py-3"
+            className="flex gap-2 border-t border-line p-3"
           >
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Descrição"
-              className="min-w-0 flex-1 rounded-xl border border-black/10 px-3 py-2 text-[14px] outline-none focus:border-brand-red dark:border-white/15 dark:bg-white/5"
+              className="field min-w-0 flex-1"
             />
             <input
               type="text"
@@ -151,41 +165,25 @@ export function Expenses() {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="€"
-              className="w-20 rounded-xl border border-black/10 px-3 py-2 text-[14px] outline-none focus:border-brand-red dark:border-white/15 dark:bg-white/5"
+              className="field w-20 shrink-0"
             />
-            <button
-              type="submit"
-              className="rounded-xl bg-brand-red px-4 text-sm font-semibold text-white"
-            >
+            <button type="submit" aria-label="Adicionar despesa" className="btn btn-primary shrink-0 px-4">
               +
             </button>
           </form>
-        </div>
+        </section>
 
-        <div className="rounded-2xl bg-brand-red p-4 text-white shadow-md">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-white/70">
-            Saldo em caixa no fim do mês
-          </p>
-          <p className="mt-0.5 text-2xl font-extrabold">{formatEuro(ledgerBalance)}</p>
-          <p className="mt-1 text-[12px] text-white/80">
-            Inclui mensalidades, jantares, atrasados cobrados e todas as despesas
-            {confirmedBalance != null ? ' (com um ajuste manual aplicado a este mês)' : ''}.
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-black/[0.06] p-4 dark:border-white/10">
+        <section className="card p-4">
           {!showManualAdjust ? (
             <button
               onClick={() => setShowManualAdjust(true)}
-              className="text-[12px] font-semibold text-black/40 underline dark:text-white/40"
+              className="text-[12px] font-semibold text-muted"
             >
               Ajustar saldo manualmente (opcional)
             </button>
           ) : (
             <>
-              <h2 className="mb-2 text-[13px] font-bold uppercase tracking-wide text-black/40 dark:text-white/40">
-                Ajustar saldo manualmente
-              </h2>
+              <h2 className="section-title mb-2">Ajustar saldo manualmente</h2>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -193,7 +191,7 @@ export function Expenses() {
                   value={balanceInput}
                   onChange={(e) => setBalanceInput(e.target.value)}
                   placeholder={formatEuro(ledgerBalance)}
-                  className="min-w-0 flex-1 rounded-xl border border-black/10 px-3 py-2.5 text-[15px] outline-none focus:border-brand-red dark:border-white/15 dark:bg-white/5"
+                  className="field min-w-0 flex-1"
                 />
                 <button
                   onClick={() => {
@@ -202,7 +200,7 @@ export function Expenses() {
                     setConfirmedBalance(month, value)
                     setBalanceInput('')
                   }}
-                  className="rounded-xl bg-brand-red px-4 text-sm font-semibold text-white"
+                  className="btn btn-primary shrink-0"
                 >
                   Guardar
                 </button>
@@ -213,19 +211,21 @@ export function Expenses() {
                     setConfirmedBalance(month, undefined)
                     setBalanceInput('')
                   }}
-                  className="mt-2 text-[12px] font-semibold text-brand-red underline"
+                  className="mt-2 text-[12px] font-semibold text-brand-red"
                 >
                   Repor cálculo automático
                 </button>
               )}
-              <p className="mt-2 text-[12px] text-black/40 dark:text-white/40">
+              <p className="mt-2 text-[12px] leading-relaxed text-subtle">
                 Usa isto só se o saldo real (banco/caixa) for diferente do calculado — por exemplo,
                 para reconciliar. A partir do valor que guardares, os meses seguintes continuam a
                 calcular-se automaticamente.
               </p>
             </>
           )}
-        </div>
+        </section>
+
+        <div className="pb-2" />
       </div>
     </div>
   )

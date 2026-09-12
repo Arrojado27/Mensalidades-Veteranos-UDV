@@ -2,48 +2,54 @@ import { methodShort } from '../types'
 import type { PaymentEntry } from '../types'
 
 const SIZE_CLASSES = {
-  sm: 'h-5 w-5 text-[9px]',
-  md: 'h-9 w-9 text-[11px]',
+  sm: 'h-[22px] min-w-[22px] px-1 text-[9px]',
+  md: 'h-10 min-w-10 px-2 text-[12px]',
 } as const
 
 export function MonthChip({
   entry,
   size = 'sm',
   onClick,
+  label,
 }: {
   entry: PaymentEntry | undefined
   size?: keyof typeof SIZE_CLASSES
   onClick?: () => void
+  label?: string
 }) {
   const status = entry?.status ?? 'pending'
-  const base = `flex items-center justify-center rounded-full font-bold shrink-0 ${SIZE_CLASSES[size]}`
+  const base = `inline-flex shrink-0 items-center justify-center rounded-xl font-bold ${SIZE_CLASSES[size]}`
 
   let classes = base
-  let label = ''
+  let text = ''
 
   if (status === 'paid') {
-    label = methodShort(entry?.method)
-    classes += ' bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/30 dark:text-emerald-400'
+    text = methodShort(entry?.method)
+    classes += ' bg-ok-soft text-ok ring-1 ring-ok/25'
   } else if (status === 'exempt') {
-    label = '·'
-    classes += ' bg-black/[0.03] text-black/20 dark:bg-white/5 dark:text-white/20'
+    text = '·'
+    classes += ' bg-ink/[0.04] text-subtle ring-1 ring-line'
   } else {
-    label = '!'
+    text = '!'
     classes += ' bg-brand-red/10 text-brand-red ring-1 ring-brand-red/25'
   }
 
   if (onClick) {
-    classes += ' cursor-pointer active:scale-90 transition-transform'
     return (
-      <button type="button" onClick={onClick} className={classes}>
-        {label}
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={label}
+        className={`${classes} transition-transform active:scale-90`}
+      >
+        {text}
       </button>
     )
   }
 
   return (
     <span className={classes} aria-hidden="true">
-      {label}
+      {text}
     </span>
   )
 }

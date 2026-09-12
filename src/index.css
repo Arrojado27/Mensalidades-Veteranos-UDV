@@ -1,93 +1,365 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/inter';
 
 /*
- * O modo escuro passa a ser escolhido na app (Definições > Aspeto), não pelo
- * sistema: o atributo data-theme no <html> é escrito por script — no index.html
- * antes do primeiro desenho e depois em src/lib/theme.ts. No "Automático" é o
- * script que lê a preferência do sistema e escreve o atributo na mesma.
+ * O modo escuro é escolhido na app (Definições > Aspeto), não pelo sistema: o
+ * atributo data-theme no <html> é escrito por script — no index.html antes do
+ * primeiro desenho e depois em src/lib/theme.ts.
  */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
+/* --------------------------------------------------------------- tokens --
+ * Uma só definição de cor por papel (fundo, superfície, texto, linha...).
+ * Os ecrãs usam os utilitários gerados daqui (bg-surface, text-muted, ...) e
+ * nunca cores cruas, para o claro e o escuro nunca saírem do sítio.
+ */
 @theme {
   --color-brand-red: #a41f24;
   --color-brand-red-dark: #7a171b;
   --color-brand-red-light: #c2393e;
   --color-brand-gold: #f0b429;
   --color-brand-gold-dark: #c9950f;
-  --color-brand-black: #1a1a1a;
-  --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  --color-ink: var(--ink);
+  --color-muted: var(--ink-muted);
+  --color-subtle: var(--ink-subtle);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-line: var(--line);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+
+  --font-sans: 'Inter Variable', 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  --radius-xl2: 1.25rem;
 }
 
 :root {
   color-scheme: light;
+
+  --app-bg: #f4f1ef;
+  --ink: #191113;
+  --ink-muted: #6b5e61;
+  --ink-subtle: #9a8e90;
+  --surface: #ffffff;
+  --raised: #faf8f7;
+  --line: rgb(25 17 19 / 0.09);
+  --ok: #0f8f5f;
+  --ok-soft: rgb(15 143 95 / 0.12);
+
+  /* vidro */
+  --glass: rgb(255 255 255 / 0.72);
+  --glass-strong: rgb(255 255 255 / 0.86);
+  --glass-line: rgb(255 255 255 / 0.6);
+  --glass-shadow: 0 8px 30px rgb(25 17 19 / 0.08);
+  --card-shadow: 0 1px 2px rgb(25 17 19 / 0.04), 0 8px 24px rgb(25 17 19 / 0.05);
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
+
+  --app-bg: #131011;
+  --ink: #f3eeec;
+  --ink-muted: #a79c9d;
+  --ink-subtle: #7d7273;
+  --surface: #1c1819;
+  --raised: #241f20;
+  --line: rgb(255 255 255 / 0.1);
+  --ok: #3ecf8e;
+  --ok-soft: rgb(62 207 142 / 0.14);
+
+  --glass: rgb(36 31 32 / 0.72);
+  --glass-strong: rgb(36 31 32 / 0.9);
+  --glass-line: rgb(255 255 255 / 0.1);
+  --glass-shadow: 0 8px 30px rgb(0 0 0 / 0.35);
+  --card-shadow: 0 1px 2px rgb(0 0 0 / 0.2), 0 8px 24px rgb(0 0 0 / 0.25);
 }
 
-html,
-body,
-#root {
-  height: 100%;
+/* ----------------------------------------------------------------- base --
+ * Dentro de @layer base para que qualquer utilitário do Tailwind (text-muted,
+ * text-transparent...) ganhe a estas regras de elemento. Fora de camadas, um
+ * simples "button { color: inherit }" venceria todas as classes de cor.
+ */
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  html {
+    background: var(--app-bg);
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    margin: 0;
+    color: var(--ink);
+    background: var(--app-bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: var(--font-sans);
+    overscroll-behavior-y: none;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  #root {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    isolation: isolate;
+    background: var(--app-bg);
+  }
+
+  /* Halos de cor por trás de tudo: dão profundidade ao vidro sem ruído. */
+  #root::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(60% 40% at 8% 0%, rgb(164 31 36 / 0.16), transparent 70%),
+      radial-gradient(50% 35% at 100% 12%, rgb(240 180 41 / 0.12), transparent 70%),
+      radial-gradient(70% 45% at 50% 100%, rgb(164 31 36 / 0.08), transparent 70%);
+  }
+
+  :root[data-theme='dark'] #root::before {
+    background:
+      radial-gradient(60% 40% at 8% 0%, rgb(164 31 36 / 0.28), transparent 70%),
+      radial-gradient(50% 35% at 100% 12%, rgb(240 180 41 / 0.1), transparent 70%),
+      radial-gradient(70% 45% at 50% 100%, rgb(164 31 36 / 0.14), transparent 70%);
+  }
+
+  input,
+  button,
+  select,
+  textarea {
+    font-family: inherit;
+    color: inherit;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(164 31 36 / 0.25);
+    border-radius: 999px;
+  }
 }
 
-html {
-  background: #fff;
-  overscroll-behavior-y: none;
-}
+/* ----------------------------------------------------------- componentes -- */
+@layer components {
+  /*
+   * Vidro. Só em superfícies fixas ou pequenas (cabeçalho, barra de navegação,
+   * painéis, cartões de destaque) — nunca em listas longas, que é onde o
+   * desfoque custa desempenho em telemóveis antigos.
+   */
+  .glass {
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid var(--glass-line);
+    box-shadow: var(--glass-shadow);
+  }
 
-body {
-  margin: 0;
-  background: #fff;
-  color: #1a1a1a;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-family: var(--font-sans);
-  overscroll-behavior-y: none;
-}
+  /* Sem desfoque (browser antigo), o fundo fica opaco para o texto não sofrer. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass {
+      background: var(--glass-strong);
+    }
+  }
 
-[data-theme='dark'] {
-  background: #1c191a;
-}
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl2);
+    box-shadow: var(--card-shadow);
+  }
 
-[data-theme='dark'] body {
-  background: #1c191a;
-  color: #f2ede8;
-}
+  .card-flat {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl2);
+  }
 
-* {
-  box-sizing: border-box;
-}
+  /* Cabeçalho com a cor do clube e um brilho por cima. */
+  .app-header {
+    position: relative;
+    overflow: hidden;
+    color: #fff;
+    background:
+      radial-gradient(120% 100% at 85% -20%, rgb(255 255 255 / 0.22), transparent 60%),
+      linear-gradient(135deg, #b52329 0%, #a41f24 45%, #7a171b 100%);
+  }
 
-#root {
-  max-width: 480px;
-  margin: 0 auto;
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.06);
-  position: relative;
-}
+  .app-header::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 1px;
+    background: rgb(255 255 255 / 0.18);
+  }
 
-[data-theme='dark'] #root {
-  background: #1c191a;
-  box-shadow: none;
-}
+  /* Botões */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border-radius: 0.9rem;
+    padding: 0.7rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    transition:
+      transform 0.12s ease,
+      filter 0.12s ease,
+      background-color 0.12s ease;
+  }
 
-input,
-button,
-select,
-textarea {
-  font-family: inherit;
-}
+  .btn:active {
+    transform: scale(0.97);
+  }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(164, 31, 36, 0.25);
-  border-radius: 999px;
+  .btn-primary {
+    color: #fff;
+    background: linear-gradient(135deg, #b52329, #8f1c21);
+    box-shadow: 0 6px 16px rgb(164 31 36 / 0.28);
+  }
+
+  .btn-soft {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
+  }
+
+  .btn-ghost {
+    color: var(--ink-muted);
+    background: transparent;
+  }
+
+  .btn-danger {
+    color: var(--color-brand-red);
+    background: rgb(164 31 36 / 0.1);
+  }
+
+  /* Campos */
+  .field {
+    width: 100%;
+    border-radius: 0.9rem;
+    border: 1px solid var(--line);
+    background: var(--raised);
+    padding: 0.65rem 0.85rem;
+    font-size: 0.95rem;
+    outline: none;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .field::placeholder {
+    color: var(--ink-subtle);
+  }
+
+  .field:focus {
+    border-color: var(--color-brand-red);
+    box-shadow: 0 0 0 3px rgb(164 31 36 / 0.14);
+  }
+
+  .label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--ink-muted);
+  }
+
+  /* Título de secção */
+  .section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-subtle);
+  }
+
+  /* Painel deslizante (bottom sheet) */
+  .sheet {
+    width: 100%;
+    max-width: 480px;
+    border-radius: 1.75rem 1.75rem 0 0;
+    background: var(--glass-strong);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
+    border-top: 1px solid var(--glass-line);
+    box-shadow: 0 -12px 40px rgb(0 0 0 / 0.22);
+    animation: sheet-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes sheet-in {
+    from {
+      transform: translateY(12%);
+      opacity: 0.6;
+    }
+  }
+
+  /* Barra de navegação flutuante: o gradiente evita que o conteúdo
+     "encoste" na barra ao fazer scroll. */
+  .tabbar {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    padding: 0.5rem 0.75rem calc(env(safe-area-inset-bottom) + 0.6rem);
+    background: linear-gradient(to top, var(--app-bg) 55%, transparent);
+  }
+
+  .tabbar-inner {
+    display: flex;
+    border-radius: 1.25rem;
+    overflow: hidden;
+  }
+
+  .scrim {
+    background: rgb(10 6 7 / 0.45);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    animation: fade-in 0.18s ease;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sheet,
+    /* Barra de navegação flutuante: o gradiente evita que o conteúdo
+     "encoste" na barra ao fazer scroll. */
+  .tabbar {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    padding: 0.5rem 0.75rem calc(env(safe-area-inset-bottom) + 0.6rem);
+    background: linear-gradient(to top, var(--app-bg) 55%, transparent);
+  }
+
+  .tabbar-inner {
+    display: flex;
+    border-radius: 1.25rem;
+    overflow: hidden;
+  }
+
+  .scrim {
+      animation: none;
+    }
+  }
 }

@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { Header, StatTile } from '../components/Header'
 import { MonthChip } from '../components/MonthChip'
 import { PaymentEditorModal } from '../components/PaymentEditorModal'
+import { ConfirmDialog } from '../components/Sheet'
 import { useData } from '../lib/DataContext'
-import { amountForEntry, formatEuro, seasonMonths } from '../lib/calc'
+import { amountForEntry, attendeeFee, formatDinnerDate, formatEuro, seasonMonths } from '../lib/calc'
 import type { MonthKey } from '../types'
 
 export function PlayerDetail() {
@@ -16,10 +18,18 @@ export function PlayerDetail() {
   const months = useMemo(() => seasonMonths(season), [season])
   const player = season.players.find((p) => p.id === playerId)
 
+  const dinners = useMemo(() => {
+    if (!player) return []
+    return season.dinners
+      .map((d) => ({ dinner: d, attendee: d.attendees.find((a) => a.playerId === player.id) }))
+      .filter((x) => x.attendee)
+      .sort((a, b) => b.dinner.date.localeCompare(a.dinner.date))
+  }, [season.dinners, player])
+
   if (!player) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
-        <p className="text-sm text-black/50">Jogador não encontrado.</p>
+        <p className="text-sm text-muted">Jogador não encontrado.</p>
         <button onClick={() => navigate('/jogadores')} className="text-sm font-semibold text-brand-red">
           Voltar à lista
         </button>
@@ -32,32 +42,27 @@ export function PlayerDetail() {
     return sum + amountForEntry(entry?.status ?? 'pending', entry?.amount, season.monthlyFee)
   }, 0)
   const pendingMonths = months.filter((m) => (player.payments[m.key]?.status ?? 'pending') === 'pending')
+  const dinnersOwed = dinners
+    .filter((x) => !x.attendee!.paid)
+    .reduce((sum, x) => sum + attendeeFee(x.dinner, x.attendee!), 0)
 
   return (
-    <div className="flex flex-1 flex-col pb-4">
-      <header className="flex items-center gap-3 bg-brand-red px-4 pb-4 pt-[calc(env(safe-area-inset-top)+16px)] text-white">
-        <button onClick={() => navigate(-1)} className="text-2xl leading-none">
-          ‹
-        </button>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[17px] font-bold leading-tight">{player.name}</h1>
-          <p className="text-[12px] text-white/80">Época {season.label}</p>
-        </div>
-      </header>
+    <div className="flex flex-1 flex-col">
+      <Header
+        title={player.name}
+        subtitle={`Época ${season.label}`}
+        onBack={() => navigate(-1)}
+        badge={player.active ? undefined : 'saiu'}
+      />
 
-      <div className="flex flex-col gap-4 px-4 pt-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-black/[0.06] p-3.5 dark:border-white/10">
-            <p className="text-[11px] font-medium uppercase text-black/40 dark:text-white/40">Total pago</p>
-            <p className="mt-0.5 text-xl font-bold">{formatEuro(totalPaid)}</p>
-          </div>
-          <div className="rounded-2xl border border-black/[0.06] p-3.5 dark:border-white/10">
-            <p className="text-[11px] font-medium uppercase text-black/40 dark:text-white/40">Meses em falta</p>
-            <p className="mt-0.5 text-xl font-bold text-brand-red">{pendingMonths.length}</p>
-          </div>
+      <div className="flex flex-col gap-3.5 px-4 pt-4">
+        <div className="grid grid-cols-3 gap-2">
+          <StatTile label="Pago" value={formatEuro(totalPaid)} tone="ok" />
+          <StatTile label="Em falta" value={String(pendingMonths.length)} hint="meses" tone="alert" />
+          <StatTile label="Jantares" value={formatEuro(dinnersOwed)} hint="por pagar" tone={dinnersOwed > 0 ? 'alert' : 'neutral'} />
         </div>
 
-        <label className="flex items-center justify-between rounded-2xl border border-black/[0.06] px-4 py-3 dark:border-white/10">
+        <label className="card flex items-center justify-between px-4 py-3">
           <span className="text-[14px] font-medium">No grupo atualmente</span>
           <input
             type="checkbox"
@@ -67,34 +72,71 @@ export function PlayerDetail() {
           />
         </label>
 
-        <div className="rounded-2xl border border-black/[0.06] dark:border-white/10">
-          <h2 className="px-4 pt-3.5 text-[13px] font-bold uppercase tracking-wide text-black/40 dark:text-white/40">
-            Mensalidades
-          </h2>
-          <ul className="divide-y divide-black/[0.05] px-4 dark:divide-white/10">
+        <section className="card overflow-hidden">
+          <h2 className="section-title px-4 pt-4">Mensalidades</h2>
+          <ul className="mt-1 divide-y divide-line">
             {months.map((m) => {
               const entry = player.payments[m.key]
+              const paid = entry?.status === 'paid'
               return (
-                <li key={m.key} className="flex items-center justify-between gap-3 py-3">
-                  <div className="min-w-0">
-                    <p className="text-[14px] font-semibold">
+                <li key={m.key} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                  <button
+                    onClick={() => setEditingMonth(m.key)}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <span className="block text-[14px] font-semibold">
                       {m.label} {m.year}
-                    </p>
-                    {entry?.note && (
-                      <p className="truncate text-[12px] text-black/40 dark:text-white/40">{entry.note}</p>
-                    )}
-                  </div>
-                  <MonthChip entry={entry} size="md" onClick={() => setEditingMonth(m.key)} />
+                    </span>
+                    <span className="block truncate text-[12px] text-muted">
+                      {paid
+                        ? formatEuro(amountForEntry('paid', entry?.amount, season.monthlyFee))
+                        : entry?.status === 'exempt'
+                          ? 'Isento'
+                          : 'Por pagar'}
+                      {entry?.note ? ` · ${entry.note}` : ''}
+                    </span>
+                  </button>
+                  <MonthChip
+                    entry={entry}
+                    size="md"
+                    label={`${m.label}: alterar`}
+                    onClick={() => setEditingMonth(m.key)}
+                  />
                 </li>
               )
             })}
           </ul>
-        </div>
+        </section>
 
-        <button
-          onClick={() => setConfirmDelete(true)}
-          className="rounded-2xl border border-red-200 py-3 text-center text-sm font-semibold text-brand-red dark:border-red-900/40"
-        >
+        {dinners.length > 0 && (
+          <section className="card overflow-hidden">
+            <h2 className="section-title px-4 pt-4">Jantares</h2>
+            <ul className="mt-1 divide-y divide-line">
+              {dinners.map(({ dinner, attendee }) => (
+                <li key={dinner.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <button
+                    onClick={() => navigate(`/jantares/${dinner.id}`)}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <span className="block truncate text-[14px] font-semibold">
+                      vs {dinner.opponent || 'adversário'}
+                    </span>
+                    <span className="block text-[12px] text-muted">{formatDinnerDate(dinner.date)}</span>
+                  </button>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                      attendee!.paid ? 'bg-ok-soft text-ok' : 'bg-brand-red/10 text-brand-red'
+                    }`}
+                  >
+                    {attendee!.paid ? 'pago' : formatEuro(attendeeFee(dinner, attendee!))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <button onClick={() => setConfirmDelete(true)} className="btn btn-danger mb-2 w-full">
           Remover jogador
         </button>
       </div>
@@ -114,37 +156,16 @@ export function PlayerDetail() {
       )}
 
       {confirmDelete && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6"
-          onClick={() => setConfirmDelete(false)}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl bg-white p-5 dark:bg-[#221f20]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="mb-2 text-base font-bold">Remover {player.name}?</h2>
-            <p className="mb-5 text-sm text-black/50 dark:text-white/50">
-              Todo o histórico de mensalidades deste jogador será apagado. Esta ação não pode ser desfeita.
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setConfirmDelete(false)}
-                className="flex-1 rounded-xl bg-black/[0.04] py-2.5 text-sm font-semibold text-black/60 dark:bg-white/10 dark:text-white/60"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  removePlayer(player.id)
-                  navigate('/jogadores')
-                }}
-                className="flex-1 rounded-xl bg-brand-red py-2.5 text-sm font-semibold text-white"
-              >
-                Remover
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title={`Remover ${player.name}?`}
+          description="Todo o histórico de mensalidades deste jogador nesta época será apagado. Esta ação não pode ser desfeita."
+          confirmLabel="Remover"
+          onClose={() => setConfirmDelete(false)}
+          onConfirm={() => {
+            removePlayer(player.id)
+            navigate('/jogadores')
+          }}
+        />
       )}
     </div>
   )
