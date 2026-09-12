@@ -150,7 +150,7 @@ export function Debts() {
           </section>
         )}
 
-        <section className="card p-4">
+        <section className="card card-glass p-4">
           <button
             onClick={() => {
               setNewPlayerId(sortedPlayers[0]?.id ?? '')

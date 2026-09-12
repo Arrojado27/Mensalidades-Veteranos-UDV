@@ -54,7 +54,7 @@ export function Dashboard() {
 
       <div className="flex flex-1 flex-col gap-3.5 px-4 pt-4">
         {seasonEnded && (
-          <div className="card border-brand-gold/30 bg-brand-gold/10 px-4 py-3 text-[13px] leading-relaxed">
+          <div className="card card-glass border-brand-gold/30 bg-brand-gold/10 px-4 py-3 text-[13px] leading-relaxed">
             A época {season.label} terminou. Cria a nova época em{' '}
             <Link to="/definicoes" className="font-semibold text-brand-red underline">
               Definições
@@ -88,7 +88,7 @@ export function Dashboard() {
         {debtsCount > 0 && (
           <Link
             to="/atrasados"
-            className="card flex items-center gap-3 border-brand-red/25 bg-brand-red/[0.06] px-4 py-3.5"
+            className="card card-glass flex items-center gap-3 border-brand-red/25 bg-brand-red/[0.06] px-4 py-3.5"
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-red/12 text-[15px] font-bold text-brand-red">
               !
@@ -108,7 +108,7 @@ export function Dashboard() {
         )}
 
         {/* Mês atual: quem falta, com um toque para marcar. */}
-        <section className="card overflow-hidden">
+        <section className="card card-glass overflow-hidden">
           <div className="flex items-center justify-between px-4 pt-4">
             <div>
               <h2 className="text-[15px] font-bold tracking-tight">
@@ -175,7 +175,7 @@ export function Dashboard() {
         </section>
 
         {lastDinner && (
-          <Link to={`/jantares/${lastDinner.id}`} className="card flex items-center gap-3 p-4">
+          <Link to={`/jantares/${lastDinner.id}`} className="card card-glass flex items-center gap-3 p-4">
             <span className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-2xl bg-brand-red/10 leading-none text-brand-red">
               <span className="text-[15px] font-extrabold">{lastDinner.date.slice(8, 10)}</span>
               <span className="text-[9px] font-bold uppercase">{monthAbbr(lastDinner.date)}</span>

@@ -97,7 +97,7 @@ export function Settings() {
       <Header title="Definições" subtitle="Mensalidades Veteranos U.D.V." badge={season.label} />
 
       <div className="flex flex-col gap-3.5 px-4 pt-4">
-        <section className="card p-4">
+        <section className="card card-glass p-4">
           <h2 className="section-title mb-3">Época</h2>
           {data.seasons.length > 1 && (
             <label className="mb-3 block">
@@ -141,7 +141,7 @@ export function Settings() {
           </button>
         </section>
 
-        <section className="card p-4">
+        <section className="card card-glass p-4">
           <h2 className="section-title mb-3">Jantares</h2>
           <div className="flex items-end gap-2">
             <label className="min-w-0 flex-1">
@@ -182,7 +182,7 @@ export function Settings() {
           </p>
         </section>
 
-        <section className="card p-4">
+        <section className="card card-glass p-4">
           <h2 className="section-title mb-2">Pagamentos em atraso</h2>
           <p className="mb-3 text-[13px] text-muted">
             {openDebtCount > 0
@@ -194,7 +194,7 @@ export function Settings() {
           </Link>
         </section>
 
-        <section className="card p-4">
+        <section className="card card-glass p-4">
           <h2 className="section-title mb-3">Aspeto</h2>
           <div className="grid grid-cols-3 gap-2">
             {THEME_OPTIONS.map(({ key, label }) => (
@@ -216,7 +216,7 @@ export function Settings() {
           </p>
         </section>
 
-        <section className="card p-4">
+        <section className="card card-glass p-4">
           <h2 className="section-title mb-3">Segurança do acesso</h2>
           {data.pin ? (
             <div className="flex items-center justify-between">
@@ -254,7 +254,7 @@ export function Settings() {
           )}
         </section>
 
-        <section className="card p-4">
+        <section className="card card-glass p-4">
           <h2 className="section-title mb-2">Relatórios</h2>
           <p className="mb-3 text-[13px] text-muted">
             Exporta o mapa de mensalidades, jantares, despesas e saldo para partilhar ou imprimir.
@@ -275,7 +275,7 @@ export function Settings() {
           </div>
         </section>
 
-        <section className="card p-4">
+        <section className="card card-glass p-4">
           <h2 className="section-title mb-2">Cópia de segurança</h2>
           <p className="mb-3 text-[13px] leading-relaxed text-muted">
             Os dados ficam guardados apenas neste telemóvel. Faz um export regularmente para não
@@ -299,7 +299,7 @@ export function Settings() {
           {importMsg && <p className="mt-2 text-[12px] text-muted">{importMsg}</p>}
         </section>
 
-        <section className="card border-brand-red/25 p-4">
+        <section className="card card-glass border-brand-red/25 p-4">
           <h2 className="section-title mb-3 text-brand-red">Zona perigosa</h2>
           <button onClick={() => setConfirmReset(true)} className="btn btn-danger w-full">
             Repor dados de origem

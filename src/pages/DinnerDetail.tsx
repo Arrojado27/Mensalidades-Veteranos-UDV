@@ -82,7 +82,7 @@ export function DinnerDetail() {
           <StatTile label="Falta" value={formatEuro(summary.missing)} tone="alert" />
         </div>
 
-        <section className="card overflow-hidden">
+        <section className="card card-glass overflow-hidden">
           <div className="flex items-center justify-between px-4 pt-4">
             <h2 className="section-title">Quem vai ao jantar</h2>
             <span className="text-[12px] font-semibold text-subtle">
@@ -167,7 +167,7 @@ export function DinnerDetail() {
           </ul>
         </section>
 
-        <section className="card overflow-hidden">
+        <section className="card card-glass overflow-hidden">
           <button
             onClick={() => setShowDetails((v) => !v)}
             className="flex w-full items-center justify-between px-4 py-3.5"

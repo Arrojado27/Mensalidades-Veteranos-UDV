@@ -54,7 +54,7 @@ export function StatTile({
   const toneClass =
     tone === 'ok' ? 'text-ok' : tone === 'alert' ? 'text-brand-red' : 'text-ink'
   return (
-    <div className="card px-3.5 py-3">
+    <div className="card card-glass px-3.5 py-3">
       <p className="text-[11px] font-medium uppercase tracking-wide text-subtle">{label}</p>
       <p className={`mt-0.5 text-[19px] font-bold tracking-tight ${toneClass}`}>{value}</p>
       {hint && <p className="mt-0.5 text-[11px] leading-tight text-subtle">{hint}</p>}

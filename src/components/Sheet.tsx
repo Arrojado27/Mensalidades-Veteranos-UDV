@@ -62,7 +62,7 @@ export function ConfirmDialog({
       role="presentation"
     >
       <div
-        className="card w-full max-w-sm p-5"
+        className="card card-glass w-full max-w-sm p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-[16px] font-bold tracking-tight">{title}</h2>

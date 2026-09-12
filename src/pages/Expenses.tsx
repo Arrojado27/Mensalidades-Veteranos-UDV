@@ -103,7 +103,7 @@ export function Expenses() {
           />
         </div>
 
-        <section className="card overflow-hidden">
+        <section className="card card-glass overflow-hidden">
           <h2 className="section-title px-4 pt-4">Despesas do mês</h2>
           <ul className="mt-1 divide-y divide-line">
             {items.map((e) => (
@@ -173,7 +173,7 @@ export function Expenses() {
           </form>
         </section>
 
-        <section className="card p-4">
+        <section className="card card-glass p-4">
           {!showManualAdjust ? (
             <button
               onClick={() => setShowManualAdjust(true)}

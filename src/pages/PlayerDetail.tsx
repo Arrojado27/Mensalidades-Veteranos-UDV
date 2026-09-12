@@ -63,7 +63,7 @@ export function PlayerDetail() {
           <StatTile label="Jantares" value={formatEuro(dinnersOwed)} hint="por pagar" tone={dinnersOwed > 0 ? 'alert' : 'neutral'} />
         </div>
 
-        <label className="card flex items-center justify-between px-4 py-3">
+        <label className="card card-glass flex items-center justify-between px-4 py-3">
           <span className="text-[14px] font-medium">No grupo atualmente</span>
           <input
             type="checkbox"
@@ -77,7 +77,7 @@ export function PlayerDetail() {
           Entrou a meio da época
         </button>
 
-        <section className="card overflow-hidden">
+        <section className="card card-glass overflow-hidden">
           <h2 className="section-title px-4 pt-4">Mensalidades</h2>
           <ul className="mt-1 divide-y divide-line">
             {months.map((m) => {
@@ -114,7 +114,7 @@ export function PlayerDetail() {
         </section>
 
         {dinners.length > 0 && (
-          <section className="card overflow-hidden">
+          <section className="card card-glass overflow-hidden">
             <h2 className="section-title px-4 pt-4">Jantares</h2>
             <ul className="mt-1 divide-y divide-line">
               {dinners.map(({ dinner, attendee }) => (
