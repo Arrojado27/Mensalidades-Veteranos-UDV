@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Header, StatTile } from '../components/Header'
 import { MonthChip } from '../components/MonthChip'
 import { PaymentEditorModal } from '../components/PaymentEditorModal'
-import { ConfirmDialog } from '../components/Sheet'
+import { ConfirmDialog, Sheet } from '../components/Sheet'
 import { useData } from '../lib/DataContext'
 import { amountForEntry, attendeeFee, formatDinnerDate, formatEuro, seasonMonths } from '../lib/calc'
 import type { MonthKey } from '../types'
@@ -14,6 +14,7 @@ export function PlayerDetail() {
   const { season, setPayment, updatePlayer, removePlayer } = useData()
   const [editingMonth, setEditingMonth] = useState<MonthKey | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showJoinMonth, setShowJoinMonth] = useState(false)
 
   const months = useMemo(() => seasonMonths(season), [season])
   const player = season.players.find((p) => p.id === playerId)
@@ -71,6 +72,10 @@ export function PlayerDetail() {
             className="h-5 w-5 accent-[#a41f24]"
           />
         </label>
+
+        <button onClick={() => setShowJoinMonth(true)} className="btn btn-soft w-full">
+          Entrou a meio da época
+        </button>
 
         <section className="card overflow-hidden">
           <h2 className="section-title px-4 pt-4">Mensalidades</h2>
@@ -140,6 +145,44 @@ export function PlayerDetail() {
           Remover jogador
         </button>
       </div>
+
+      {showJoinMonth && (
+        <Sheet
+          title="A partir de que mês paga?"
+          subtitle="Os meses anteriores ficam isentos — não entram em falta nem passam a dívida na época seguinte. Meses já pagos não são tocados."
+          onClose={() => setShowJoinMonth(false)}
+          scroll
+        >
+          <ul className="flex flex-col gap-1.5">
+            {months.map((m, index) => (
+              <li key={m.key}>
+                <button
+                  onClick={() => {
+                    months.forEach((other, otherIndex) => {
+                      const entry = player.payments[other.key]
+                      if (entry?.status === 'paid') return
+                      if (otherIndex < index) {
+                        setPayment(player.id, other.key, { status: 'exempt' })
+                      } else if (entry?.status === 'exempt') {
+                        setPayment(player.id, other.key, { status: 'pending' })
+                      }
+                    })
+                    setShowJoinMonth(false)
+                  }}
+                  className="flex w-full items-center justify-between rounded-2xl bg-ink/[0.03] px-3.5 py-3 text-left"
+                >
+                  <span className="text-[14px] font-semibold">
+                    {m.label} {m.year}
+                  </span>
+                  <span className="text-[11px] text-subtle">
+                    {index === 0 ? 'desde o início' : `isenta ${index} ${index === 1 ? 'mês' : 'meses'}`}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Sheet>
+      )}
 
       {editingMonth && (
         <PaymentEditorModal
