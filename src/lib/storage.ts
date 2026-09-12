@@ -1,4 +1,4 @@
-import type { AppData, SeasonData } from '../types'
+import type { AppData, PaymentEntry, PaymentMethod, SeasonData } from '../types'
 import {
   DEFAULT_DINNER_GUEST_FEE,
   DEFAULT_DINNER_PLAYER_FEE,
@@ -9,7 +9,7 @@ import { createSeedSeason } from '../data/seed'
 import { monthExpensesTotal, summarizeMonth } from './calc'
 
 const STORAGE_KEY = 'udv-veteranos-mensalidades-v1'
-const DATA_VERSION = 3
+const DATA_VERSION = 4
 
 function createInitialData(): AppData {
   const season = createSeedSeason()
@@ -63,6 +63,38 @@ function migrateSeasonToV2(season: SeasonData): SeasonData {
   return { ...season, confirmedBalances }
 }
 
+/**
+ * Multibanco e transferência passam a ser a mesma coisa: tudo o que estava
+ * marcado como 'mb' fica como transferência.
+ */
+function migrateSeasonToV4(season: SeasonData): SeasonData {
+  const fix = (method: string | undefined) => (method === 'mb' ? 'transfer' : method)
+  return {
+    ...season,
+    players: season.players.map((p) => ({
+      ...p,
+      payments: Object.fromEntries(
+        Object.entries(p.payments).map(([key, entry]) => [
+          key,
+          entry ? { ...entry, method: fix(entry.method) as PaymentEntry['method'] } : entry,
+        ]),
+      ),
+    })),
+    dinners: season.dinners.map((d) => ({
+      ...d,
+      attendees: d.attendees.map((a) => ({ ...a, method: fix(a.method) as PaymentEntry['method'] })),
+    })),
+    carriedDebts: season.carriedDebts.map((debt) =>
+      debt.settled
+        ? {
+            ...debt,
+            settled: { ...debt.settled, method: fix(debt.settled.method) as PaymentMethod },
+          }
+        : debt,
+    ),
+  }
+}
+
 function migrateData(data: AppData): AppData {
   const version = data.version ?? 1
   if (version >= DATA_VERSION) {
@@ -72,6 +104,7 @@ function migrateData(data: AppData): AppData {
   const seasons = data.seasons
     .map(normalizeSeason)
     .map((s) => (version < 2 ? migrateSeasonToV2(s) : s))
+    .map((s) => (version < 4 ? migrateSeasonToV4(s) : s))
   return { ...data, version: DATA_VERSION, seasons }
 }
 

@@ -46,22 +46,27 @@ export function monthsForStartYear(startYear: number): MonthInfo[] {
   }))
 }
 
-export type PaymentMethod = 'mb' | 'transfer' | 'cash'
+export type PaymentMethod = 'transfer' | 'cash'
 export type PaymentStatus = 'paid' | 'pending' | 'exempt'
 
-/** Formas de pagamento, pela ordem em que aparecem nos botões. */
+/** Forma como o dinheiro entrou. Multibanco e transferência contam como o mesmo. */
 export const PAYMENT_METHODS: { key: PaymentMethod; label: string; short: string }[] = [
-  { key: 'mb', label: 'Multibanco', short: 'MB' },
   { key: 'transfer', label: 'Transferência', short: 'T' },
   { key: 'cash', label: 'Numerário', short: '€' },
 ]
 
+/** Dados gravados antes da junção ainda podem trazer 'mb'. */
+function normalizeMethod(method: PaymentMethod | 'mb' | undefined): PaymentMethod | undefined {
+  if (method === undefined) return undefined
+  return method === 'mb' ? 'transfer' : method
+}
+
 export function methodLabel(method: PaymentMethod | undefined): string {
-  return PAYMENT_METHODS.find((m) => m.key === method)?.label ?? 'Numerário'
+  return PAYMENT_METHODS.find((m) => m.key === normalizeMethod(method))?.label ?? 'Numerário'
 }
 
 export function methodShort(method: PaymentMethod | undefined): string {
-  return PAYMENT_METHODS.find((m) => m.key === method)?.short ?? '€'
+  return PAYMENT_METHODS.find((m) => m.key === normalizeMethod(method))?.short ?? '€'
 }
 
 export interface PaymentEntry {

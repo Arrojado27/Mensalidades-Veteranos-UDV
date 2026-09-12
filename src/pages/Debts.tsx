@@ -294,7 +294,7 @@ export function Debts() {
 
           <div className="mb-3">
             <span className="label">Como pagou</span>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {PAYMENT_METHODS.map(({ key, label }) => (
                 <button
                   key={key}

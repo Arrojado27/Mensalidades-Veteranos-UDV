@@ -80,7 +80,7 @@ export function Players() {
 
         <div className="mt-2.5 flex items-center justify-between gap-3">
           <p className="min-w-0 flex-1 truncate text-[11px] text-subtle">
-            MB · T · € pago &nbsp;·&nbsp; ! por pagar &nbsp;·&nbsp; · isento
+            T transferência &nbsp;·&nbsp; € numerário &nbsp;·&nbsp; ! por pagar &nbsp;·&nbsp; · isento
           </p>
           <button
             onClick={() => setManage((v) => !v)}

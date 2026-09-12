@@ -7,7 +7,7 @@ import {
 
 /**
  * Notação compacta usada para transcrever o mapa de mensalidades 2025/26:
- * 'MB' = pago por Multibanco, 'E' = pago em numerário (€),
+ * 'MB' = pago por transferência/Multibanco, 'E' = pago em numerário (€),
  * '.' = por pagar, 'x' = isento/não aplicável (fora do grupo nesse mês).
  * A ordem segue sempre MONTH_TEMPLATE (Set..Jun).
  */
@@ -21,7 +21,7 @@ function buildPayments(
   MONTH_TEMPLATE.forEach((m, i) => {
     const t = tokens[i]
     let entry: PaymentEntry
-    if (t === 'MB') entry = { status: 'paid', method: 'mb' }
+    if (t === 'MB') entry = { status: 'paid', method: 'transfer' }
     else if (t === 'E') entry = { status: 'paid', method: 'cash' }
     else if (t === 'x') entry = { status: 'exempt' }
     else entry = { status: 'pending' }

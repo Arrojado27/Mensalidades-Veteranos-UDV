@@ -162,7 +162,7 @@ export function exportSeasonToPDF(season: SeasonData) {
     40,
     56,
   )
-  doc.text('Legenda: MB = Multibanco · T = Transferência · € = Numerário · - = Isento', 40, 68)
+  doc.text('Legenda: T = Transferência (inclui Multibanco) · € = Numerário · - = Isento', 40, 68)
 
   autoTable(doc, {
     startY: 82,

@@ -61,7 +61,21 @@ export function StatTile({
   )
 }
 
-/** Iniciais do jogador, no lugar de uma fotografia. */
+/**
+ * Doze tons bem separados no círculo cromático. O jogador fica sempre com o
+ * mesmo, para se distinguir na lista sem ser preciso ler as iniciais.
+ */
+const AVATAR_HUES = [4, 28, 45, 72, 110, 150, 172, 195, 220, 258, 290, 325]
+
+function hueForName(name: string) {
+  let hash = 0
+  for (let i = 0; i < name.length; i += 1) {
+    hash = (hash * 31 + name.charCodeAt(i)) % 100000
+  }
+  return AVATAR_HUES[hash % AVATAR_HUES.length]
+}
+
+/** Iniciais do jogador, com cor própria, no lugar de uma fotografia. */
 export function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
   // Primeira letra do primeiro nome e do apelido. Trata os nomes abreviados do
   // mapa ("A.Rocha" -> AR) e ignora alcunhas entre parênteses.
@@ -75,7 +89,8 @@ export function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md'
   const box = size === 'sm' ? 'h-9 w-9 text-[12px]' : 'h-10 w-10 text-[13px]'
   return (
     <span
-      className={`flex shrink-0 items-center justify-center rounded-full bg-ink/[0.08] font-bold tracking-wide text-ink/70 ring-1 ring-line ${box}`}
+      className={`avatar flex shrink-0 items-center justify-center rounded-full font-bold tracking-wide ${box}`}
+      style={{ '--avatar-h': hueForName(name) } as React.CSSProperties}
     >
       {initials}
     </span>

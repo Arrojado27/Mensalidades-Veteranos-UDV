@@ -11,9 +11,8 @@ const STATUS_OPTIONS: [PaymentStatus, string][] = [
 ]
 
 const METHOD_ACTIVE_CLASSES: Record<PaymentMethod, string> = {
-  mb: 'bg-brand-gold/25 text-brand-gold-dark ring-1 ring-brand-gold/50',
-  transfer: 'bg-sky-500/15 text-sky-700 ring-1 ring-sky-500/40 dark:text-sky-400',
-  cash: 'bg-ok-soft text-ok ring-1 ring-ok/40',
+  transfer: 'bg-sky-500/15 text-sky-700 ring-1 ring-sky-500/45 dark:text-sky-300',
+  cash: 'bg-ok-soft text-ok ring-1 ring-ok/45',
 }
 
 export function PaymentEditorModal({
@@ -36,7 +35,7 @@ export function PaymentEditorModal({
   const [status, setStatus] = useState<PaymentStatus>(
     entry?.status === 'exempt' ? 'exempt' : 'paid',
   )
-  const [method, setMethod] = useState<PaymentMethod>(entry?.method ?? 'mb')
+  const [method, setMethod] = useState<PaymentMethod>(entry?.method ?? 'transfer')
   const [amount, setAmount] = useState<string>(amountToInput(entry?.amount))
   const [note, setNote] = useState(entry?.note ?? '')
 
@@ -90,7 +89,7 @@ export function PaymentEditorModal({
         <div className="mt-4 space-y-3">
           <div>
             <span className="label">Como pagou</span>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {PAYMENT_METHODS.map(({ key, label }) => (
                 <button
                   key={key}
