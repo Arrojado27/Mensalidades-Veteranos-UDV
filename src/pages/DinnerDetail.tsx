@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { MoneyInput } from '../components/MoneyInput'
 import { useData } from '../lib/DataContext'
 import { attendeeFee, formatDinnerDate, formatEuro, monthLabel, monthKeyForDate, summarizeDinner } from '../lib/calc'
+import { PAYMENT_METHODS, methodLabel } from '../types'
 import type { DinnerAttendee } from '../types'
 
 export function DinnerDetail() {
@@ -173,22 +174,23 @@ export function DinnerDetail() {
                   <p className="truncate text-[14px] font-semibold">{a.name}</p>
                   <p className="text-[11px] text-black/40 dark:text-white/40">
                     {a.kind === 'guest' ? 'Convidado' : 'Jogador'} · {formatEuro(attendeeFee(dinner, a))}
-                    {a.paid && ` · ${a.method === 'mb' ? 'MB' : 'numerário'}`}
+                    {a.paid && ` · ${methodLabel(a.method).toLowerCase()}`}
                   </p>
                 </div>
                 {a.paid && (
                   <div className="flex shrink-0 overflow-hidden rounded-lg ring-1 ring-black/10 dark:ring-white/15">
-                    {(['cash', 'mb'] as const).map((m) => (
+                    {PAYMENT_METHODS.map(({ key, short, label }) => (
                       <button
-                        key={m}
-                        onClick={() => updateAttendee(dinner.id, a.id, { method: m })}
+                        key={key}
+                        onClick={() => updateAttendee(dinner.id, a.id, { method: key })}
+                        aria-label={`${a.name} pagou por ${label}`}
                         className={`px-2 py-1 text-[11px] font-bold ${
-                          (a.method ?? 'cash') === m
+                          (a.method ?? 'cash') === key
                             ? 'bg-brand-red text-white'
                             : 'text-black/40 dark:text-white/40'
                         }`}
                       >
-                        {m === 'mb' ? 'MB' : '€'}
+                        {short}
                       </button>
                     ))}
                   </div>

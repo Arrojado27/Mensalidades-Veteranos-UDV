@@ -58,6 +58,9 @@ export function Players() {
             {manage ? 'Concluir' : 'Gerir'}
           </button>
         </div>
+        <p className="mt-2 text-[11px] text-black/35 dark:text-white/35">
+          MB Multibanco · T Transferência · € Numerário · ! por pagar · · isento
+        </p>
       </div>
 
       <ul className="mt-2 flex flex-1 flex-col divide-y divide-black/[0.05] px-4 dark:divide-white/10">

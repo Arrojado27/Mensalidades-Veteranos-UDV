@@ -1,3 +1,4 @@
+import { methodShort } from '../types'
 import type { PaymentEntry } from '../types'
 
 const SIZE_CLASSES = {
@@ -21,7 +22,7 @@ export function MonthChip({
   let label = ''
 
   if (status === 'paid') {
-    label = entry?.method === 'mb' ? 'MB' : '€'
+    label = methodShort(entry?.method)
     classes += ' bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/30 dark:text-emerald-400'
   } else if (status === 'exempt') {
     label = '·'

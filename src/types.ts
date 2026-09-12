@@ -43,8 +43,23 @@ export function monthsForStartYear(startYear: number): MonthInfo[] {
   }))
 }
 
-export type PaymentMethod = 'mb' | 'cash'
+export type PaymentMethod = 'mb' | 'transfer' | 'cash'
 export type PaymentStatus = 'paid' | 'pending' | 'exempt'
+
+/** Formas de pagamento, pela ordem em que aparecem nos botões. */
+export const PAYMENT_METHODS: { key: PaymentMethod; label: string; short: string }[] = [
+  { key: 'mb', label: 'Multibanco', short: 'MB' },
+  { key: 'transfer', label: 'Transferência', short: 'T' },
+  { key: 'cash', label: 'Numerário', short: '€' },
+]
+
+export function methodLabel(method: PaymentMethod | undefined): string {
+  return PAYMENT_METHODS.find((m) => m.key === method)?.label ?? 'Numerário'
+}
+
+export function methodShort(method: PaymentMethod | undefined): string {
+  return PAYMENT_METHODS.find((m) => m.key === method)?.short ?? '€'
+}
 
 export interface PaymentEntry {
   status: PaymentStatus

@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { amountToInput, parseAmount } from '../lib/calc'
+import { PAYMENT_METHODS } from '../types'
 import type { PaymentEntry, PaymentMethod, PaymentStatus } from '../types'
+
+const METHOD_ACTIVE_CLASSES: Record<PaymentMethod, string> = {
+  mb: 'bg-brand-gold/25 text-brand-gold-dark ring-1 ring-brand-gold/50',
+  transfer: 'bg-sky-500/15 text-sky-700 ring-1 ring-sky-500/40 dark:text-sky-400',
+  cash: 'bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/40 dark:text-emerald-400',
+}
 
 export function PaymentEditorModal({
   playerName,
@@ -70,27 +77,20 @@ export function PaymentEditorModal({
 
         {status === 'paid' && (
           <div className="mb-4 space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => setMethod('mb')}
-                className={`rounded-xl py-2.5 text-sm font-semibold ${
-                  method === 'mb'
-                    ? 'bg-brand-gold/25 text-brand-gold-dark ring-1 ring-brand-gold/50'
-                    : 'bg-black/[0.04] text-black/50 dark:bg-white/10 dark:text-white/50'
-                }`}
-              >
-                Multibanco
-              </button>
-              <button
-                onClick={() => setMethod('cash')}
-                className={`rounded-xl py-2.5 text-sm font-semibold ${
-                  method === 'cash'
-                    ? 'bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/40'
-                    : 'bg-black/[0.04] text-black/50 dark:bg-white/10 dark:text-white/50'
-                }`}
-              >
-                Numerário (€)
-              </button>
+            <div className="grid grid-cols-3 gap-2">
+              {PAYMENT_METHODS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setMethod(key)}
+                  className={`rounded-xl px-1 py-2.5 text-[12px] font-semibold ${
+                    method === key
+                      ? METHOD_ACTIVE_CLASSES[key]
+                      : 'bg-black/[0.04] text-black/50 dark:bg-white/10 dark:text-white/50'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
             <label className="block text-sm">
               <span className="mb-1 block text-black/50 dark:text-white/50">

@@ -10,7 +10,7 @@ import {
   parseAmount,
   seasonMonths,
 } from '../lib/calc'
-import { MONTH_KEYS } from '../types'
+import { MONTH_KEYS, PAYMENT_METHODS, methodLabel } from '../types'
 import type { CarriedDebt, MonthKey, PaymentMethod } from '../types'
 
 export function Debts() {
@@ -129,7 +129,7 @@ export function Debts() {
                     <p className="truncate text-[14px] font-medium">{d.playerName}</p>
                     <p className="text-[11px] text-black/40 dark:text-white/40">
                       {d.monthLabel} ({d.fromSeasonLabel}) · entrou em{' '}
-                      {monthLabel(season, d.settled!.month)} · {d.settled!.method === 'mb' ? 'MB' : 'numerário'}
+                      {monthLabel(season, d.settled!.month)} · {methodLabel(d.settled!.method).toLowerCase()}
                     </p>
                   </div>
                   <span className="shrink-0 text-[14px] font-semibold text-emerald-600">
@@ -259,18 +259,18 @@ export function Debts() {
 
             <div className="mb-3">
               <span className="mb-1 block text-sm text-black/50 dark:text-white/50">Como pagou</span>
-              <div className="flex gap-2">
-                {(['cash', 'mb'] as const).map((m) => (
+              <div className="grid grid-cols-3 gap-2">
+                {PAYMENT_METHODS.map(({ key, label }) => (
                   <button
-                    key={m}
-                    onClick={() => setMethod(m)}
-                    className={`flex-1 rounded-xl py-2.5 text-sm font-semibold ${
-                      method === m
+                    key={key}
+                    onClick={() => setMethod(key)}
+                    className={`rounded-xl px-1 py-2.5 text-[12px] font-semibold ${
+                      method === key
                         ? 'bg-brand-red text-white'
                         : 'bg-black/[0.04] text-black/60 dark:bg-white/10 dark:text-white/60'
                     }`}
                   >
-                    {m === 'mb' ? 'Multibanco' : 'Numerário'}
+                    {label}
                   </button>
                 ))}
               </div>

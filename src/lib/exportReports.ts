@@ -18,7 +18,7 @@ import {
   summarizeDinner,
   summarizeMonth,
 } from './calc'
-import { MONTH_KEYS } from '../types'
+import { MONTH_KEYS, methodLabel, methodShort } from '../types'
 import type { MonthKey, SeasonData } from '../types'
 
 function cellLabel(season: SeasonData, playerId: string, monthKey: MonthKey) {
@@ -26,7 +26,7 @@ function cellLabel(season: SeasonData, playerId: string, monthKey: MonthKey) {
   const entry = player?.payments[monthKey]
   if (!entry || entry.status === 'pending') return ''
   if (entry.status === 'exempt') return '-'
-  const label = entry.method === 'mb' ? 'MB' : '€'
+  const label = methodShort(entry.method)
   const amount = amountForEntry(entry.status, entry.amount, season.monthlyFee)
   if (entry.amount != null && entry.amount !== season.monthlyFee) {
     return `${label} (${amount}€)`
@@ -102,7 +102,7 @@ export function exportSeasonToExcel(season: SeasonData) {
         Tipo: a.kind === 'guest' ? 'Convidado' : 'Jogador',
         'A pagar (€)': attendeeFee(d, a),
         Pago: a.paid ? 'Sim' : 'Não',
-        Método: a.paid ? (a.method === 'mb' ? 'MB' : 'Numerário') : '',
+        Método: a.paid ? methodLabel(a.method) : '',
       }))
     return [header, ...rows]
   })
@@ -162,9 +162,10 @@ export function exportSeasonToPDF(season: SeasonData) {
     40,
     56,
   )
+  doc.text('Legenda: MB = Multibanco · T = Transferência · € = Numerário · - = Isento', 40, 68)
 
   autoTable(doc, {
-    startY: 70,
+    startY: 82,
     head: [['Jogador', ...months.map((m) => m.label), 'Total (€)']],
     body: players.map((p) => [
       p.name + (p.active ? '' : ' (saiu)'),
@@ -213,7 +214,7 @@ export function exportSeasonToPDF(season: SeasonData) {
           a.name,
           a.kind === 'guest' ? 'Convidado' : 'Jogador',
           formatEuro(attendeeFee(d, a)),
-          a.paid ? (a.method === 'mb' ? 'Sim (MB)' : 'Sim (numerário)') : 'Não',
+          a.paid ? `Sim (${methodLabel(a.method).toLowerCase()})` : 'Não',
         ]),
         styles: { fontSize: 8, cellPadding: 4 },
         headStyles: { fillColor: brandRed, textColor: 255 },
