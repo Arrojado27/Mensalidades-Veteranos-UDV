@@ -53,7 +53,7 @@ export function Dinners() {
                   className="card w-full overflow-hidden p-4 text-left"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-2xl bg-brand-red/10 leading-none text-brand-red">
+                    <span className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-2xl bg-ink/[0.06] leading-none ring-1 ring-line">
                       <span className="text-[17px] font-extrabold">{d.date.slice(8, 10)}</span>
                       <span className="text-[9px] font-bold uppercase">
                         {MONTH_ABBR[Number(d.date.slice(5, 7)) - 1]}

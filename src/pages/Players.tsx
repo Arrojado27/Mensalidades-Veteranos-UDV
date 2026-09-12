@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Header } from '../components/Header'
+import { Avatar, Header } from '../components/Header'
 import { MonthChip } from '../components/MonthChip'
 import { ConfirmDialog, Sheet } from '../components/Sheet'
 import { useData } from '../lib/DataContext'
@@ -98,13 +98,7 @@ export function Players() {
               onClick={() => navigate(`/jogadores/${p.id}`)}
               className="flex min-w-0 flex-1 items-center gap-3 text-left"
             >
-              <span
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-[13px] font-bold ${
-                  p.active ? 'bg-brand-red/10 text-brand-red' : 'bg-ink/[0.06] text-subtle'
-                }`}
-              >
-                {p.name.slice(0, 2).toUpperCase()}
-              </span>
+              <Avatar name={p.name} />
               <span className="min-w-0 flex-1">
                 <span className="flex items-baseline justify-between gap-2">
                   <span className={`truncate text-[14px] font-semibold ${!p.active ? 'text-muted' : ''}`}>

@@ -64,14 +64,14 @@ export function Expenses() {
 
       <div className="flex flex-col gap-3.5 px-4 pt-3">
         {/* Saldo primeiro: é a pergunta a que este ecrã responde. */}
-        <div className="app-header rounded-[22px] p-5 shadow-lg">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-white/70">
-            Saldo no fim de {monthName.label} {monthName.year}
+        <div className="accent-card p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-subtle">
+            Saldo no fim de {monthName.long} {monthName.year}
           </p>
-          <p className="mt-1 text-[32px] font-extrabold leading-none tracking-tight">
+          <p className="mt-1.5 text-[30px] font-extrabold leading-none tracking-tight">
             {formatEuro(ledgerBalance)}
           </p>
-          <p className="mt-2 text-[12px] text-white/75">
+          <p className="mt-2 text-[12px] text-muted">
             Mensalidades, jantares, atrasados cobrados e todas as despesas
             {confirmedBalance != null ? ' · com ajuste manual neste mês' : ''}.
           </p>

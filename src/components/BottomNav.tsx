@@ -19,16 +19,16 @@ export function BottomNav() {
             end={to === '/'}
             className={({ isActive }) =>
               `relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-semibold transition-colors ${
-                isActive ? 'text-brand-red' : 'text-subtle'
+                isActive ? 'text-ink' : 'text-subtle'
               }`
             }
           >
             {({ isActive }) => (
               <>
                 {isActive && (
-                  <span className="absolute inset-x-2 inset-y-1 -z-10 rounded-2xl bg-brand-red/10" />
+                  <span className="absolute -top-px h-0.5 w-8 rounded-full bg-brand-red" />
                 )}
-                <Icon className="h-[22px] w-[22px]" />
+                <Icon className="h-[22px] w-[22px]" strokeWidth={isActive ? 2.1 : 1.7} />
                 {label}
               </>
             )}

@@ -334,6 +334,16 @@ export function amountToInput(value: number | undefined): string {
   return String(value).replace('.', ',')
 }
 
+const EURO_FORMAT = new Intl.NumberFormat('pt-PT', {
+  style: 'currency',
+  currency: 'EUR',
+  useGrouping: true,
+})
+
 export function formatEuro(value: number) {
-  return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value)
+  // O pt-PT separa os milhares com espaço; em contas escritas à mão usa-se o
+  // ponto, que é também o que se lê melhor num ecrã pequeno.
+  return EURO_FORMAT.format(value).replace(/[\s\u00a0\u202f]/g, (match, offset, full) =>
+    offset === full.length - 2 ? match : '.',
+  )
 }

@@ -3,6 +3,7 @@ export type MonthKey = 'set' | 'out' | 'nov' | 'dez' | 'jan' | 'fev' | 'mar' | '
 export interface MonthInfo {
   key: MonthKey
   label: string
+  long: string
   year: number
 }
 
@@ -13,19 +14,20 @@ export interface MonthInfo {
 export const MONTH_TEMPLATE: {
   key: MonthKey
   label: string
+  long: string
   yearOffset: 0 | 1
   monthNumber: number
 }[] = [
-  { key: 'set', label: 'Set', yearOffset: 0, monthNumber: 8 },
-  { key: 'out', label: 'Out', yearOffset: 0, monthNumber: 9 },
-  { key: 'nov', label: 'Nov', yearOffset: 0, monthNumber: 10 },
-  { key: 'dez', label: 'Dez', yearOffset: 0, monthNumber: 11 },
-  { key: 'jan', label: 'Jan', yearOffset: 1, monthNumber: 0 },
-  { key: 'fev', label: 'Fev', yearOffset: 1, monthNumber: 1 },
-  { key: 'mar', label: 'Mar', yearOffset: 1, monthNumber: 2 },
-  { key: 'abr', label: 'Abr', yearOffset: 1, monthNumber: 3 },
-  { key: 'mai', label: 'Mai', yearOffset: 1, monthNumber: 4 },
-  { key: 'jun', label: 'Jun', yearOffset: 1, monthNumber: 5 },
+  { key: 'set', label: 'Set', long: 'Setembro', yearOffset: 0, monthNumber: 8 },
+  { key: 'out', label: 'Out', long: 'Outubro', yearOffset: 0, monthNumber: 9 },
+  { key: 'nov', label: 'Nov', long: 'Novembro', yearOffset: 0, monthNumber: 10 },
+  { key: 'dez', label: 'Dez', long: 'Dezembro', yearOffset: 0, monthNumber: 11 },
+  { key: 'jan', label: 'Jan', long: 'Janeiro', yearOffset: 1, monthNumber: 0 },
+  { key: 'fev', label: 'Fev', long: 'Fevereiro', yearOffset: 1, monthNumber: 1 },
+  { key: 'mar', label: 'Mar', long: 'Março', yearOffset: 1, monthNumber: 2 },
+  { key: 'abr', label: 'Abr', long: 'Abril', yearOffset: 1, monthNumber: 3 },
+  { key: 'mai', label: 'Mai', long: 'Maio', yearOffset: 1, monthNumber: 4 },
+  { key: 'jun', label: 'Jun', long: 'Junho', yearOffset: 1, monthNumber: 5 },
 ]
 
 export const MONTH_KEYS: MonthKey[] = MONTH_TEMPLATE.map((m) => m.key)
@@ -39,6 +41,7 @@ export function monthsForStartYear(startYear: number): MonthInfo[] {
   return MONTH_TEMPLATE.map((m) => ({
     key: m.key,
     label: m.label,
+    long: m.long,
     year: startYear + m.yearOffset,
   }))
 }
