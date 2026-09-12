@@ -51,7 +51,7 @@ export function StatTile({
   hint?: string
   tone?: 'neutral' | 'ok' | 'alert'
 }) {
-  const toneClass = tone === 'ok' ? 'text-ok' : tone === 'alert' ? 'text-brand-red' : 'text-ink'
+  const toneClass = tone === 'ok' ? 'text-ok' : tone === 'alert' ? 'text-danger' : 'text-ink'
   return (
     <div className="card card-glass px-3.5 py-3">
       <p className="text-[11px] font-medium uppercase tracking-wide text-subtle">{label}</p>
@@ -63,14 +63,19 @@ export function StatTile({
 
 /** Iniciais do jogador, no lugar de uma fotografia. */
 export function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
+  // Primeira letra do primeiro nome e do apelido. Trata os nomes abreviados do
+  // mapa ("A.Rocha" -> AR) e ignora alcunhas entre parênteses.
+  const parts = name
+    .trim()
+    .split(/[\s.]+/)
+    .filter((part) => part && !part.startsWith('('))
   const initials = (
-    parts.length > 1 ? parts[0][0] + parts[1][0] : (parts[0] ?? '?').slice(0, 2)
+    parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : (parts[0] ?? '?').slice(0, 2)
   ).toUpperCase()
   const box = size === 'sm' ? 'h-9 w-9 text-[12px]' : 'h-10 w-10 text-[13px]'
   return (
     <span
-      className={`flex shrink-0 items-center justify-center rounded-full bg-ink/[0.07] font-semibold text-muted ring-1 ring-line ${box}`}
+      className={`flex shrink-0 items-center justify-center rounded-full bg-ink/[0.08] font-bold tracking-wide text-ink/70 ring-1 ring-line ${box}`}
     >
       {initials}
     </span>

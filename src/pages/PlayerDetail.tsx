@@ -31,7 +31,7 @@ export function PlayerDetail() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
         <p className="text-sm text-muted">Jogador não encontrado.</p>
-        <button onClick={() => navigate('/jogadores')} className="text-sm font-semibold text-brand-red">
+        <button onClick={() => navigate('/jogadores')} className="text-sm font-semibold text-danger">
           Voltar à lista
         </button>
       </div>
@@ -130,7 +130,7 @@ export function PlayerDetail() {
                   </button>
                   <span
                     className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                      attendee!.paid ? 'bg-ok-soft text-ok' : 'bg-brand-red/10 text-brand-red'
+                      attendee!.paid ? 'bg-ok-soft text-ok' : 'bg-danger-soft text-danger'
                     }`}
                   >
                     {attendee!.paid ? 'pago' : formatEuro(attendeeFee(dinner, attendee!))}

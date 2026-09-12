@@ -28,6 +28,10 @@
   --color-line: var(--line);
   --color-ok: var(--ok);
   --color-ok-soft: var(--ok-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
 
   --font-sans: 'Inter Variable', 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
 
@@ -44,8 +48,10 @@
   --surface: #ffffff;
   --raised: #f7f7f9;
   --line: rgb(20 20 26 / 0.08);
-  --ok: #0f8f5f;
-  --ok-soft: rgb(15 143 95 / 0.12);
+  --ok: #0a7d51;
+  --ok-soft: rgb(10 125 81 / 0.14);
+  --danger: #b4232a;
+  --danger-soft: rgb(180 35 42 / 0.12);
   --warn: #b4801a;
   --warn-soft: rgb(240 180 41 / 0.14);
 
@@ -72,8 +78,10 @@
   --surface: #1a1a1d;
   --raised: #212125;
   --line: rgb(255 255 255 / 0.08);
-  --ok: #3ecf8e;
-  --ok-soft: rgb(62 207 142 / 0.14);
+  --ok: #4ade9b;
+  --ok-soft: rgb(74 222 155 / 0.18);
+  --danger: #ff7b80;
+  --danger-soft: rgb(255 123 128 / 0.18);
   --warn: #e8b14a;
   --warn-soft: rgb(232 177 74 / 0.12);
 
@@ -327,8 +335,8 @@
   }
 
   .btn-danger {
-    color: var(--color-brand-red);
-    background: rgb(164 31 36 / 0.1);
+    color: var(--danger);
+    background: var(--danger-soft);
   }
 
   /* Campos */

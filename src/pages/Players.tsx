@@ -84,7 +84,7 @@ export function Players() {
           </p>
           <button
             onClick={() => setManage((v) => !v)}
-            className={`shrink-0 text-[12px] font-semibold ${manage ? 'text-brand-red' : 'text-muted'}`}
+            className={`shrink-0 text-[12px] font-semibold ${manage ? 'text-danger' : 'text-muted'}`}
           >
             {manage ? 'Concluir' : 'Gerir'}
           </button>

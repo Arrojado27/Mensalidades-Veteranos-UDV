@@ -89,7 +89,7 @@ export function Debts() {
                 >
                   Apagar todas
                 </button>
-                <span className="shrink-0 rounded-full bg-brand-red/10 px-2.5 py-1 text-[12px] font-bold text-brand-red">
+                <span className="shrink-0 rounded-full bg-brand-red/10 px-2.5 py-1 text-[12px] font-bold text-danger">
                   {formatEuro(g.total)}
                 </span>
               </div>
@@ -140,7 +140,7 @@ export function Debts() {
                   </span>
                   <button
                     onClick={() => unsettleDebt(d.id)}
-                    className="shrink-0 text-[12px] font-semibold text-brand-red"
+                    className="shrink-0 text-[12px] font-semibold text-danger"
                   >
                     Anular
                   </button>

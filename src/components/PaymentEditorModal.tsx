@@ -76,7 +76,7 @@ export function PaymentEditorModal({
                 ? value === 'paid'
                   ? 'bg-ok-soft text-ok ring-1 ring-ok/40'
                   : value === 'pending'
-                    ? 'bg-brand-red/10 text-brand-red ring-1 ring-brand-red/30'
+                    ? 'bg-danger-soft text-danger ring-1 ring-brand-red/30'
                     : 'btn-soft ring-1 ring-line'
                 : 'btn-soft text-muted'
             }`}

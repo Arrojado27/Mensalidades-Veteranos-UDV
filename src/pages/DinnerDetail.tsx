@@ -41,7 +41,7 @@ export function DinnerDetail() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
         <p className="text-sm text-muted">Jantar não encontrado.</p>
-        <button onClick={() => navigate('/jantares')} className="text-sm font-semibold text-brand-red">
+        <button onClick={() => navigate('/jantares')} className="text-sm font-semibold text-danger">
           Voltar aos jantares
         </button>
       </div>

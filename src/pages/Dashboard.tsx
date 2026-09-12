@@ -56,7 +56,7 @@ export function Dashboard() {
         {seasonEnded && (
           <div className="card card-glass border-brand-gold/30 bg-brand-gold/10 px-4 py-3 text-[13px] leading-relaxed">
             A época {season.label} terminou. Cria a nova época em{' '}
-            <Link to="/definicoes" className="font-semibold text-brand-red underline">
+            <Link to="/definicoes" className="font-semibold text-danger underline">
               Definições
             </Link>
             .
@@ -117,7 +117,7 @@ export function Dashboard() {
             </div>
             <span
               className={`rounded-full px-2.5 py-1 text-[12px] font-bold ${
-                progressPct === 100 ? 'bg-ok-soft text-ok' : 'bg-brand-red/10 text-brand-red'
+                progressPct === 100 ? 'bg-ok-soft text-ok' : 'bg-danger-soft text-danger'
               }`}
             >
               {progressPct}%
@@ -193,7 +193,7 @@ export function Dashboard() {
               </p>
             </div>
             {summarizeDinner(lastDinner).missing > 0 && (
-              <span className="shrink-0 rounded-full bg-brand-red/10 px-2.5 py-1 text-[11px] font-bold text-brand-red">
+              <span className="shrink-0 rounded-full bg-brand-red/10 px-2.5 py-1 text-[11px] font-bold text-danger">
                 falta {formatEuro(summarizeDinner(lastDinner).missing)}
               </span>
             )}
@@ -214,7 +214,7 @@ export function Dashboard() {
           />
         </div>
 
-        <Link to="/jogadores" className="btn btn-soft mb-2 w-full text-brand-red">
+        <Link to="/jogadores" className="btn btn-soft mb-2 w-full text-danger">
           Ver todos os jogadores →
         </Link>
       </div>

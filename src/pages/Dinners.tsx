@@ -71,7 +71,7 @@ export function Dinners() {
                     </span>
                     <span
                       className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                        s.missing > 0 ? 'bg-brand-red/10 text-brand-red' : 'bg-ok-soft text-ok'
+                        s.missing > 0 ? 'bg-danger-soft text-danger' : 'bg-ok-soft text-ok'
                       }`}
                     >
                       {s.missing > 0 ? `falta ${formatEuro(s.missing)}` : 'tudo pago'}

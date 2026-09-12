@@ -223,7 +223,7 @@ export function Settings() {
               <span className="text-[14px]">Bloqueio por PIN ativo</span>
               <button
                 onClick={() => setData((prev) => ({ ...prev, pin: undefined }))}
-                className="text-[13px] font-semibold text-brand-red"
+                className="text-[13px] font-semibold text-danger"
               >
                 Desativar
               </button>
@@ -300,7 +300,7 @@ export function Settings() {
         </section>
 
         <section className="card card-glass border-brand-red/25 p-4">
-          <h2 className="section-title mb-3 text-brand-red">Zona perigosa</h2>
+          <h2 className="section-title mb-3 text-danger">Zona perigosa</h2>
           <button onClick={() => setConfirmReset(true)} className="btn btn-danger w-full">
             Repor dados de origem
           </button>

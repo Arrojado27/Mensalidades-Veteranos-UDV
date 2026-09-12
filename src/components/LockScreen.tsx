@@ -36,7 +36,7 @@ export function LockScreen({ pin, onUnlock }: { pin: string; onUnlock: () => voi
           className="field text-center text-2xl tracking-[0.4em]"
           placeholder="····"
         />
-        {error && <p className="text-[13px] text-brand-red">PIN incorreto, tenta novamente.</p>}
+        {error && <p className="text-[13px] text-danger">PIN incorreto, tenta novamente.</p>}
         <button type="submit" className="btn btn-pay py-3.5">
           Entrar
         </button>

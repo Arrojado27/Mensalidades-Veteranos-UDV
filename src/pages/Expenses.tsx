@@ -211,7 +211,7 @@ export function Expenses() {
                     setConfirmedBalance(month, undefined)
                     setBalanceInput('')
                   }}
-                  className="mt-2 text-[12px] font-semibold text-brand-red"
+                  className="mt-2 text-[12px] font-semibold text-danger"
                 >
                   Repor cálculo automático
                 </button>

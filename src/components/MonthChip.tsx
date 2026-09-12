@@ -2,7 +2,7 @@ import { methodShort } from '../types'
 import type { PaymentEntry } from '../types'
 
 const SIZE_CLASSES = {
-  sm: 'h-[22px] min-w-[22px] px-1 text-[9px]',
+  sm: 'h-[24px] min-w-[24px] px-1.5 text-[10px]',
   md: 'h-10 min-w-10 px-2 text-[12px]',
 } as const
 
@@ -25,13 +25,13 @@ export function MonthChip({
 
   if (status === 'paid') {
     text = methodShort(entry?.method)
-    classes += ' bg-ok-soft text-ok ring-1 ring-ok/25'
+    classes += ' bg-ok-soft text-ok ring-1 ring-ok/45'
   } else if (status === 'exempt') {
     text = '·'
-    classes += ' bg-ink/[0.04] text-subtle ring-1 ring-line'
+    classes += ' bg-ink/[0.05] text-subtle ring-1 ring-line'
   } else {
     text = '!'
-    classes += ' bg-brand-red/10 text-brand-red ring-1 ring-brand-red/25'
+    classes += ' bg-danger-soft text-danger ring-1 ring-danger/45'
   }
 
   if (onClick) {
