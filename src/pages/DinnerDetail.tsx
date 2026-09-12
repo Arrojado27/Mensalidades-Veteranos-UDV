@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Header, StatTile } from '../components/Header'
+import { Avatar, Header, StatTile } from '../components/Header'
 import { MoneyInput } from '../components/MoneyInput'
 import { ConfirmDialog, Sheet } from '../components/Sheet'
 import { useData } from '../lib/DataContext'
@@ -12,7 +12,7 @@ import {
   monthLabel,
   summarizeDinner,
 } from '../lib/calc'
-import { PAYMENT_METHODS, methodLabel } from '../types'
+import { PAYMENT_METHODS } from '../types'
 import type { DinnerAttendee } from '../types'
 
 export function DinnerDetail() {
@@ -114,41 +114,53 @@ export function DinnerDetail() {
           <ul className="mt-2 divide-y divide-line">
             {sortedAttendees.map((a) => (
               <li key={a.id} className="flex items-center gap-2.5 px-4 py-2.5">
-                <button
-                  onClick={() => togglePaid(a)}
-                  aria-label={a.paid ? 'Marcar como não pago' : 'Marcar como pago'}
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[14px] font-bold transition-colors ${
-                    a.paid
-                      ? 'bg-ok-soft text-ok ring-1 ring-ok/30'
-                      : 'bg-ink/[0.04] text-transparent ring-1 ring-line'
-                  }`}
-                >
-                  ✓
-                </button>
+                <Avatar name={a.name} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className={`truncate text-[14px] font-semibold ${a.paid ? 'text-muted' : ''}`}>
                     {a.name}
                   </p>
-                  <p className="text-[11px] text-subtle">
-                    {a.kind === 'guest' ? 'Convidado' : 'Jogador'} · {formatEuro(attendeeFee(dinner, a))}
-                    {a.paid && ` · ${methodLabel(a.method).toLowerCase()}`}
-                  </p>
+                  {a.paid ? (
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <span className="text-[11px] text-subtle">{formatEuro(attendeeFee(dinner, a))}</span>
+                      <div className="flex overflow-hidden rounded-lg ring-1 ring-line">
+                        {PAYMENT_METHODS.map(({ key, short, label }) => (
+                          <button
+                            key={key}
+                            onClick={() => updateAttendee(dinner.id, a.id, { method: key })}
+                            aria-label={`${a.name} pagou por ${label}`}
+                            className={`px-2 py-0.5 text-[11px] font-bold ${
+                              (a.method ?? 'cash') === key ? 'bg-brand-red text-white' : 'text-subtle'
+                            }`}
+                          >
+                            {short}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-subtle">
+                      {a.kind === 'guest' ? 'Convidado' : 'Jogador'} ·{' '}
+                      {formatEuro(attendeeFee(dinner, a))}
+                    </p>
+                  )}
                 </div>
-                {a.paid && (
-                  <div className="flex shrink-0 overflow-hidden rounded-xl ring-1 ring-line">
-                    {PAYMENT_METHODS.map(({ key, short, label }) => (
-                      <button
-                        key={key}
-                        onClick={() => updateAttendee(dinner.id, a.id, { method: key })}
-                        aria-label={`${a.name} pagou por ${label}`}
-                        className={`px-2 py-1.5 text-[11px] font-bold ${
-                          (a.method ?? 'cash') === key ? 'bg-brand-red text-white' : 'text-subtle'
-                        }`}
-                      >
-                        {short}
-                      </button>
-                    ))}
-                  </div>
+                {/* A ação fica à direita; quem paga desce para o fim da lista. */}
+                {a.paid ? (
+                  <button
+                    onClick={() => togglePaid(a)}
+                    aria-label={`Marcar ${a.name} como não pago`}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-ok-soft text-[14px] font-bold text-ok ring-1 ring-ok/35"
+                  >
+                    ✓
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => togglePaid(a)}
+                    aria-label={`Marcar ${a.name} como pago`}
+                    className="btn btn-pay shrink-0 px-3.5 py-2 text-[12px]"
+                  >
+                    Pago
+                  </button>
                 )}
                 <button
                   onClick={() => removeAttendee(dinner.id, a.id)}
