@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Header, StatTile } from '../components/Header'
-import { Sheet } from '../components/Sheet'
+import { ConfirmDialog, Sheet } from '../components/Sheet'
 import { useData } from '../lib/DataContext'
 import {
   amountToInput,
@@ -22,6 +22,7 @@ export function Debts() {
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState<PaymentMethod>('cash')
   const [month, setMonth] = useState<MonthKey>(getCurrentMonthKey(season) ?? MONTH_KEYS[0])
+  const [clearing, setClearing] = useState<{ name: string; ids: string[] } | null>(null)
   const [showAdd, setShowAdd] = useState(false)
   const [newPlayerId, setNewPlayerId] = useState('')
   const [newLabel, setNewLabel] = useState('')
@@ -81,7 +82,13 @@ export function Debts() {
           grouped.map((g) => (
             <section key={g.name + g.debts[0].id} className="card overflow-hidden">
               <div className="flex items-center justify-between gap-3 px-4 pt-4">
-                <h2 className="truncate text-[15px] font-bold tracking-tight">{g.name}</h2>
+                <h2 className="min-w-0 flex-1 truncate text-[15px] font-bold tracking-tight">{g.name}</h2>
+                <button
+                  onClick={() => setClearing({ name: g.name, ids: g.debts.map((d) => d.id) })}
+                  className="shrink-0 text-[11px] font-semibold text-muted"
+                >
+                  Apagar todas
+                </button>
                 <span className="shrink-0 rounded-full bg-brand-red/10 px-2.5 py-1 text-[12px] font-bold text-brand-red">
                   {formatEuro(g.total)}
                 </span>
@@ -163,6 +170,19 @@ export function Debts() {
 
         <div className="pb-2" />
       </div>
+
+      {clearing && (
+        <ConfirmDialog
+          title={`Apagar os atrasados de ${clearing.name}?`}
+          description={`Deixa de haver ${clearing.ids.length} mensalidade${clearing.ids.length === 1 ? '' : 's'} por cobrar a este jogador. Usa isto quando ele afinal não devia nada — por exemplo, se só entrou para o grupo esta época.`}
+          confirmLabel="Apagar"
+          onClose={() => setClearing(null)}
+          onConfirm={() => {
+            clearing.ids.forEach((id) => removeDebt(id))
+            setClearing(null)
+          }}
+        />
+      )}
 
       {showAdd && (
         <Sheet

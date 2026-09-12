@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
+import { MONTH_KEYS } from '../types'
 import type {
   AppData,
   CarriedDebt,
@@ -14,6 +15,7 @@ import type {
 } from '../types'
 import {
   buildCarriedDebts,
+  isMonthElapsed,
   monthIncomeTotal,
   monthOutflowTotal,
   seasonFinalBalance,
@@ -117,12 +119,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [updateSeason],
   )
 
+  /**
+   * Quem entra a meio da época não deve os meses anteriores à entrada: esses
+   * ficam isentos. Sem isto apareceria em falta em meses em que nem era do
+   * grupo — e essa falta seguia como dívida para a época seguinte.
+   */
   const addPlayer = useCallback(
     (name: string) => {
-      updateSeason((s) => ({
-        ...s,
-        players: [...s.players, { id: nextId('player'), name, active: true, payments: {} }],
-      }))
+      updateSeason((s) => {
+        const payments: Player['payments'] = {}
+        for (const key of MONTH_KEYS) {
+          if (isMonthElapsed(s, key)) payments[key] = { status: 'exempt' }
+        }
+        return {
+          ...s,
+          players: [...s.players, { id: nextId('player'), name, active: true, payments }],
+        }
+      })
     },
     [updateSeason],
   )
