@@ -11,6 +11,8 @@ import {
   seasonFinalBalance,
 } from '../lib/calc'
 import { exportBackup, importBackup, resetData, startYearFromLabel } from '../lib/storage'
+import { THEME_OPTIONS, applyTheme, loadThemePreference, saveThemePreference } from '../lib/theme'
+import type { ThemePreference } from '../lib/theme'
 
 function nextSeasonLabel(startYear: number) {
   const next = startYear + 1
@@ -31,6 +33,7 @@ export function Settings() {
   const [carryBalance, setCarryBalance] = useState(true)
   const [carryDebts, setCarryDebts] = useState(true)
   const [pinDraft, setPinDraft] = useState('')
+  const [theme, setTheme] = useState<ThemePreference>(() => loadThemePreference())
 
   const pendingDebts = useMemo(() => buildCarriedDebts(season), [season])
   const pendingTotal = pendingDebts.reduce((sum, d) => sum + d.amount, 0)
@@ -256,6 +259,34 @@ export function Settings() {
           >
             Abrir atrasados
           </Link>
+        </section>
+
+        <section className="rounded-2xl border border-black/[0.06] p-4 dark:border-white/10">
+          <h2 className="mb-3 text-[13px] font-bold uppercase tracking-wide text-black/40 dark:text-white/40">
+            Aspeto
+          </h2>
+          <div className="grid grid-cols-3 gap-2">
+            {THEME_OPTIONS.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => {
+                  setTheme(key)
+                  saveThemePreference(key)
+                  applyTheme(key)
+                }}
+                className={`rounded-xl px-1 py-2.5 text-[13px] font-semibold ${
+                  theme === key
+                    ? 'bg-brand-red text-white'
+                    : 'bg-black/[0.04] text-black/60 dark:bg-white/10 dark:text-white/60'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[12px] text-black/40 dark:text-white/40">
+            No automático, a app acompanha o modo claro/escuro do telemóvel.
+          </p>
         </section>
 
         <section className="rounded-2xl border border-black/[0.06] p-4 dark:border-white/10">

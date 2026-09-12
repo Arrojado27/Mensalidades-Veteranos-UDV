@@ -11,6 +11,24 @@
     <meta name="apple-mobile-web-app-title" content="Veteranos UDV" />
     <meta name="description" content="Controlo de mensalidades, despesas e saldo dos Veteranos U.D.V." />
     <title>Mensalidades Veteranos U.D.V.</title>
+    <script>
+      // Aplica o tema guardado antes de pintar o ecrã, para não haver flash
+      // branco ao abrir a app no escuro. Ver src/lib/theme.ts.
+      (function () {
+        var dark = false
+        try {
+          var pref = localStorage.getItem('udv-veteranos-tema') || 'system'
+          dark =
+            pref === 'dark' ||
+            (pref === 'system' &&
+              window.matchMedia &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+        } catch (e) {
+          dark = false
+        }
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

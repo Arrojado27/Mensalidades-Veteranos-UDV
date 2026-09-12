@@ -1,5 +1,13 @@
 @import 'tailwindcss';
 
+/*
+ * O modo escuro passa a ser escolhido na app (Definições > Aspeto), não pelo
+ * sistema: o atributo data-theme no <html> é escrito por script — no index.html
+ * antes do primeiro desenho e depois em src/lib/theme.ts. No "Automático" é o
+ * script que lê a preferência do sistema e escreve o atributo na mesma.
+ */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
 @theme {
   --color-brand-red: #a41f24;
   --color-brand-red-dark: #7a171b;
@@ -12,6 +20,10 @@
 
 :root {
   color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 html,
@@ -35,14 +47,13 @@ body {
   overscroll-behavior-y: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    background: #1c191a;
-  }
-  body {
-    background: #1c191a;
-    color: #f2ede8;
-  }
+[data-theme='dark'] {
+  background: #1c191a;
+}
+
+[data-theme='dark'] body {
+  background: #1c191a;
+  color: #f2ede8;
 }
 
 * {
@@ -60,10 +71,9 @@ body {
   position: relative;
 }
 
-@media (prefers-color-scheme: dark) {
-  #root {
-    background: #1c191a;
-  }
+[data-theme='dark'] #root {
+  background: #1c191a;
+  box-shadow: none;
 }
 
 input,
