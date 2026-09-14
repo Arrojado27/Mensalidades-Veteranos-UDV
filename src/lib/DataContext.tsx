@@ -30,6 +30,7 @@ export interface NewSeasonOptions {
   monthlyFee: number
   dinnerPlayerFee: number
   dinnerGuestFee: number
+  dinnerChildFee: number
   /** Transporta os jogadores ativos da época atual. */
   carryPlayers: boolean
   /** Arranca com o saldo em caixa da época atual. */
@@ -51,7 +52,7 @@ interface DataContextValue {
   removeExpense: (expenseId: string) => void
   setConfirmedBalance: (month: MonthKey, value: number | undefined) => void
   setMonthlyFee: (fee: number) => void
-  setDinnerFees: (playerFee: number, guestFee: number) => void
+  setDinnerFees: (playerFee: number, guestFee: number, childFee: number) => void
   addDinner: (dinner: { date: string; opponent: string; note?: string }) => string
   updateDinner: (dinnerId: string, patch: Partial<Omit<Dinner, 'id'>>) => void
   removeDinner: (dinnerId: string) => void
@@ -224,8 +225,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   )
 
   const setDinnerFees = useCallback(
-    (playerFee: number, guestFee: number) => {
-      updateSeason((s) => ({ ...s, dinnerPlayerFee: playerFee, dinnerGuestFee: guestFee }))
+    (playerFee: number, guestFee: number, childFee: number) => {
+      updateSeason((s) => ({
+        ...s,
+        dinnerPlayerFee: playerFee,
+        dinnerGuestFee: guestFee,
+        dinnerChildFee: childFee,
+      }))
     },
     [updateSeason],
   )
@@ -244,6 +250,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             note,
             playerFee: s.dinnerPlayerFee,
             guestFee: s.dinnerGuestFee,
+            childFee: s.dinnerChildFee,
             attendees: [],
           },
         ],
@@ -348,6 +355,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           monthlyFee: options.monthlyFee,
           dinnerPlayerFee: options.dinnerPlayerFee,
           dinnerGuestFee: options.dinnerGuestFee,
+          dinnerChildFee: options.dinnerChildFee,
           openingBalance: options.carryBalance && current ? seasonFinalBalance(current) : 0,
           players:
             options.carryPlayers && current

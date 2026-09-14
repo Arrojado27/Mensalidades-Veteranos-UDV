@@ -66,6 +66,7 @@ export function Dinners() {
                       <span className="block text-[12px] text-muted">
                         {s.players} jogador{s.players === 1 ? '' : 'es'}
                         {s.guests > 0 && ` · ${s.guests} convidado${s.guests === 1 ? '' : 's'}`}
+                        {s.children > 0 && ` · ${s.children} criança${s.children === 1 ? '' : 's'}`}
                         {d.cost != null && ` · custo ${formatEuro(d.cost)}`}
                       </span>
                     </span>

@@ -1,5 +1,6 @@
 import type { ExpenseItem, MonthKey, Player, PaymentEntry, SeasonData } from '../types'
 import {
+  DEFAULT_DINNER_CHILD_FEE,
   DEFAULT_DINNER_GUEST_FEE,
   DEFAULT_DINNER_PLAYER_FEE,
   MONTH_TEMPLATE,
@@ -145,6 +146,7 @@ export function createSeedSeason(): SeasonData {
     monthlyFee: 20,
     dinnerPlayerFee: DEFAULT_DINNER_PLAYER_FEE,
     dinnerGuestFee: DEFAULT_DINNER_GUEST_FEE,
+    dinnerChildFee: DEFAULT_DINNER_CHILD_FEE,
     openingBalance: 0,
     players,
     expenses,

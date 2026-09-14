@@ -27,6 +27,7 @@ export function Settings() {
   const [feeInput, setFeeInput] = useState(amountToInput(season.monthlyFee))
   const [playerFeeInput, setPlayerFeeInput] = useState(amountToInput(season.dinnerPlayerFee))
   const [guestFeeInput, setGuestFeeInput] = useState(amountToInput(season.dinnerGuestFee))
+  const [childFeeInput, setChildFeeInput] = useState(amountToInput(season.dinnerChildFee))
   const [importMsg, setImportMsg] = useState<string | null>(null)
   const [confirmReset, setConfirmReset] = useState(false)
   const [showNewSeason, setShowNewSeason] = useState(false)
@@ -74,6 +75,7 @@ export function Settings() {
       monthlyFee: season.monthlyFee,
       dinnerPlayerFee: season.dinnerPlayerFee,
       dinnerGuestFee: season.dinnerGuestFee,
+      dinnerChildFee: season.dinnerChildFee,
       carryPlayers,
       carryBalance,
       carryDebts,
@@ -147,40 +149,44 @@ export function Settings() {
 
         <section className="card card-glass p-4">
           <h2 className="section-title mb-3">Jantares</h2>
-          <div className="flex items-end gap-2">
-            <label className="min-w-0 flex-1">
-              <span className="label">€ jogador</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={playerFeeInput}
-                onChange={(e) => setPlayerFeeInput(e.target.value)}
-                className="field"
-              />
-            </label>
-            <label className="min-w-0 flex-1">
-              <span className="label">€ convidado</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={guestFeeInput}
-                onChange={(e) => setGuestFeeInput(e.target.value)}
-                className="field"
-              />
-            </label>
-            <button
-              onClick={() => {
-                const playerFee = parseAmount(playerFeeInput)
-                const guestFee = parseAmount(guestFeeInput)
-                if (playerFee != null && guestFee != null && playerFee >= 0 && guestFee >= 0) {
-                  setDinnerFees(playerFee, guestFee)
-                }
-              }}
-              className="btn btn-primary shrink-0"
-            >
-              Guardar
-            </button>
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              ['€ jogador', playerFeeInput, setPlayerFeeInput],
+              ['€ convidado', guestFeeInput, setGuestFeeInput],
+              ['€ criança', childFeeInput, setChildFeeInput],
+            ] as const).map(([label, value, setValue]) => (
+              <label key={label} className="min-w-0">
+                <span className="label">{label}</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  className="field"
+                />
+              </label>
+            ))}
           </div>
+          <button
+            onClick={() => {
+              const playerFee = parseAmount(playerFeeInput)
+              const guestFee = parseAmount(guestFeeInput)
+              const childFee = parseAmount(childFeeInput)
+              if (
+                playerFee != null &&
+                guestFee != null &&
+                childFee != null &&
+                playerFee >= 0 &&
+                guestFee >= 0 &&
+                childFee >= 0
+              ) {
+                setDinnerFees(playerFee, guestFee, childFee)
+              }
+            }}
+            className="btn btn-primary mt-2 w-full"
+          >
+            Guardar
+          </button>
           <p className="mt-2 text-[12px] text-subtle">
             Valores usados nos jantares novos. Cada jantar guarda os preços praticados nessa data.
           </p>

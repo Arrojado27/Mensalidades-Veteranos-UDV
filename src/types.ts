@@ -35,6 +35,7 @@ export const MONTH_KEYS: MonthKey[] = MONTH_TEMPLATE.map((m) => m.key)
 export const DEFAULT_SEASON_START_YEAR = 2025
 export const DEFAULT_DINNER_PLAYER_FEE = 10
 export const DEFAULT_DINNER_GUEST_FEE = 18
+export const DEFAULT_DINNER_CHILD_FEE = 13
 
 /** Meses de uma época que arranca em `startYear` (Set desse ano a Jun do seguinte). */
 export function monthsForStartYear(startYear: number): MonthInfo[] {
@@ -112,7 +113,13 @@ export interface CarriedDebt {
   }
 }
 
-export type AttendeeKind = 'player' | 'guest'
+export type AttendeeKind = 'player' | 'guest' | 'child'
+
+export const ATTENDEE_LABELS: Record<AttendeeKind, string> = {
+  player: 'Jogador',
+  guest: 'Convidado',
+  child: 'Criança',
+}
 
 export interface DinnerAttendee {
   id: string
@@ -136,6 +143,7 @@ export interface Dinner {
   /** Preços praticados neste jantar (snapshot, para não mexer no histórico). */
   playerFee: number
   guestFee: number
+  childFee: number
   /** Custo total pago ao restaurante, quando conhecido. */
   cost?: number
   attendees: DinnerAttendee[]
@@ -151,6 +159,8 @@ export interface SeasonData {
   dinnerPlayerFee: number
   /** Quanto paga um convidado por cada jantar. */
   dinnerGuestFee: number
+  /** Quanto paga uma criança por cada jantar. */
+  dinnerChildFee: number
   openingBalance: number
   players: Player[]
   expenses: ExpenseItem[]

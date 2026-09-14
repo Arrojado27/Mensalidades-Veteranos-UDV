@@ -12,8 +12,8 @@ import {
   monthLabel,
   summarizeDinner,
 } from '../lib/calc'
-import { PAYMENT_METHODS } from '../types'
-import type { DinnerAttendee } from '../types'
+import { ATTENDEE_LABELS, PAYMENT_METHODS } from '../types'
+import type { AttendeeKind, DinnerAttendee } from '../types'
 
 export function DinnerDetail() {
   const { dinnerId } = useParams()
@@ -23,6 +23,7 @@ export function DinnerDetail() {
   const [showPlayerPicker, setShowPlayerPicker] = useState(false)
   const [picked, setPicked] = useState<string[]>([])
   const [guestName, setGuestName] = useState('')
+  const [guestKind, setGuestKind] = useState<Exclude<AttendeeKind, 'player'>>('guest')
   const [showGuest, setShowGuest] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -51,7 +52,7 @@ export function DinnerDetail() {
   const summary = summarizeDinner(dinner)
   const sortedAttendees = [...dinner.attendees].sort((a, b) => {
     if (a.paid !== b.paid) return a.paid ? 1 : -1
-    if (a.kind !== b.kind) return a.kind === 'player' ? -1 : 1
+    if (a.kind !== b.kind) return a.kind === 'player' ? -1 : b.kind === 'player' ? 1 : 0
     return a.name.localeCompare(b.name, 'pt')
   })
 
@@ -75,8 +76,14 @@ export function DinnerDetail() {
         <div className="grid grid-cols-3 gap-2">
           <StatTile
             label="Vão"
-            value={String(summary.players + summary.guests)}
-            hint={`${summary.players} jog · ${summary.guests} conv`}
+            value={String(summary.players + summary.guests + summary.children)}
+            hint={[
+              `${summary.players} jog`,
+              summary.guests > 0 ? `${summary.guests} conv` : '',
+              summary.children > 0 ? `${summary.children} cri` : '',
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           />
           <StatTile label="Recebido" value={formatEuro(summary.received)} tone="ok" />
           <StatTile label="Falta" value={formatEuro(summary.missing)} tone="alert" />
@@ -103,6 +110,7 @@ export function DinnerDetail() {
             <button
               onClick={() => {
                 setGuestName('')
+                setGuestKind('guest')
                 setShowGuest(true)
               }}
               className="btn btn-soft flex-1"
@@ -139,8 +147,7 @@ export function DinnerDetail() {
                     </div>
                   ) : (
                     <p className="text-[11px] text-subtle">
-                      {a.kind === 'guest' ? 'Convidado' : 'Jogador'} ·{' '}
-                      {formatEuro(attendeeFee(dinner, a))}
+                      {ATTENDEE_LABELS[a.kind]} · {formatEuro(attendeeFee(dinner, a))}
                     </p>
                   )}
                 </div>
@@ -211,9 +218,9 @@ export function DinnerDetail() {
                   className="field"
                 />
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <label className="block">
-                  <span className="label">€ por jogador</span>
+                  <span className="label">€ jogador</span>
                   <MoneyInput
                     value={dinner.playerFee}
                     onChange={(v) => updateDinner(dinner.id, { playerFee: v ?? 0 })}
@@ -221,10 +228,18 @@ export function DinnerDetail() {
                   />
                 </label>
                 <label className="block">
-                  <span className="label">€ por convidado</span>
+                  <span className="label">€ convidado</span>
                   <MoneyInput
                     value={dinner.guestFee}
                     onChange={(v) => updateDinner(dinner.id, { guestFee: v ?? 0 })}
+                    className="field"
+                  />
+                </label>
+                <label className="block">
+                  <span className="label">€ criança</span>
+                  <MoneyInput
+                    value={dinner.childFee}
+                    onChange={(v) => updateDinner(dinner.id, { childFee: v ?? 0 })}
                     className="field"
                   />
                 </label>
@@ -331,8 +346,8 @@ export function DinnerDetail() {
 
       {showGuest && (
         <Sheet
-          title="Novo convidado"
-          subtitle={`Paga ${formatEuro(dinner.guestFee)}.`}
+          title="Quem vem de fora"
+          subtitle="Convidado ou criança — cada um tem o seu preço."
           onClose={() => setShowGuest(false)}
           footer={
             <>
@@ -342,7 +357,9 @@ export function DinnerDetail() {
               <button
                 onClick={() => {
                   if (guestName.trim()) {
-                    addAttendees(dinner.id, [{ kind: 'guest', name: guestName.trim(), paid: false }])
+                    addAttendees(dinner.id, [
+                      { kind: guestKind, name: guestName.trim(), paid: false },
+                    ])
                   }
                   setShowGuest(false)
                 }}
@@ -353,12 +370,28 @@ export function DinnerDetail() {
             </>
           }
         >
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            {([
+              ['guest', `Convidado · ${formatEuro(dinner.guestFee)}`],
+              ['child', `Criança · ${formatEuro(dinner.childFee)}`],
+            ] as const).map(([kind, label]) => (
+              <button
+                key={kind}
+                onClick={() => setGuestKind(kind)}
+                className={`btn px-1 text-[12px] ${
+                  guestKind === kind ? 'btn-primary' : 'btn-soft text-muted'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <input
             autoFocus
             type="text"
             value={guestName}
             onChange={(e) => setGuestName(e.target.value)}
-            placeholder="Nome do convidado"
+            placeholder="Nome"
             className="field"
           />
         </Sheet>

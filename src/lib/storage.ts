@@ -1,5 +1,6 @@
 import type { AppData, PaymentEntry, PaymentMethod, SeasonData } from '../types'
 import {
+  DEFAULT_DINNER_CHILD_FEE,
   DEFAULT_DINNER_GUEST_FEE,
   DEFAULT_DINNER_PLAYER_FEE,
   DEFAULT_SEASON_START_YEAR,
@@ -36,7 +37,12 @@ function normalizeSeason(season: SeasonData): SeasonData {
     startYear: season.startYear ?? startYearFromLabel(season.label),
     dinnerPlayerFee: season.dinnerPlayerFee ?? DEFAULT_DINNER_PLAYER_FEE,
     dinnerGuestFee: season.dinnerGuestFee ?? DEFAULT_DINNER_GUEST_FEE,
-    dinners: season.dinners ?? [],
+    dinnerChildFee: season.dinnerChildFee ?? DEFAULT_DINNER_CHILD_FEE,
+    // Jantares gravados antes de haver preço de criança.
+    dinners: (season.dinners ?? []).map((d) => ({
+      ...d,
+      childFee: d.childFee ?? season.dinnerChildFee ?? DEFAULT_DINNER_CHILD_FEE,
+    })),
     carriedDebts: season.carriedDebts ?? [],
     expenses: season.expenses ?? [],
     players: season.players ?? [],

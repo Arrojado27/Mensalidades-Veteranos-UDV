@@ -120,12 +120,15 @@ export function summarizeMonth(season: SeasonData, month: MonthKey): MonthSummar
 /** Preço a cobrar a um participante (preço do jantar ou valor específico). */
 export function attendeeFee(dinner: Dinner, attendee: DinnerAttendee): number {
   if (attendee.amount != null) return attendee.amount
-  return attendee.kind === 'guest' ? dinner.guestFee : dinner.playerFee
+  if (attendee.kind === 'guest') return dinner.guestFee
+  if (attendee.kind === 'child') return dinner.childFee
+  return dinner.playerFee
 }
 
 export interface DinnerSummary {
   players: number
   guests: number
+  children: number
   expected: number
   received: number
   missing: number
@@ -135,12 +138,14 @@ export interface DinnerSummary {
 export function summarizeDinner(dinner: Dinner): DinnerSummary {
   let players = 0
   let guests = 0
+  let children = 0
   let expected = 0
   let received = 0
   const unpaid: DinnerAttendee[] = []
 
   for (const a of dinner.attendees) {
     if (a.kind === 'guest') guests += 1
+    else if (a.kind === 'child') children += 1
     else players += 1
     const fee = attendeeFee(dinner, a)
     expected += fee
@@ -148,7 +153,7 @@ export function summarizeDinner(dinner: Dinner): DinnerSummary {
     else unpaid.push(a)
   }
 
-  return { players, guests, expected, received, missing: expected - received, unpaid }
+  return { players, guests, children, expected, received, missing: expected - received, unpaid }
 }
 
 export function dinnersForMonth(season: SeasonData, month: MonthKey): Dinner[] {

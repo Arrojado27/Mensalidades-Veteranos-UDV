@@ -18,7 +18,7 @@ import {
   summarizeDinner,
   summarizeMonth,
 } from './calc'
-import { MONTH_KEYS, methodLabel, methodShort } from '../types'
+import { ATTENDEE_LABELS, MONTH_KEYS, methodLabel, methodShort } from '../types'
 import type { MonthKey, SeasonData } from '../types'
 
 function cellLabel(season: SeasonData, playerId: string, monthKey: MonthKey) {
@@ -87,7 +87,7 @@ export function exportSeasonToExcel(season: SeasonData) {
     const header = {
       Data: formatDinnerDate(d.date),
       Adversário: d.opponent,
-      Quem: `— ${s.players} jogadores + ${s.guests} convidados —`,
+      Quem: `— ${s.players} jogadores + ${s.guests} convidados + ${s.children} crianças —`,
       Tipo: '',
       'A pagar (€)': s.expected,
       Pago: `${s.received}€ recebidos`,
@@ -99,7 +99,7 @@ export function exportSeasonToExcel(season: SeasonData) {
         Data: formatDinnerDate(d.date),
         Adversário: d.opponent,
         Quem: a.name,
-        Tipo: a.kind === 'guest' ? 'Convidado' : 'Jogador',
+        Tipo: ATTENDEE_LABELS[a.kind],
         'A pagar (€)': attendeeFee(d, a),
         Pago: a.paid ? 'Sim' : 'Não',
         Método: a.paid ? methodLabel(a.method) : '',
@@ -186,7 +186,7 @@ export function exportSeasonToPDF(season: SeasonData) {
 
     autoTable(doc, {
       startY: 60,
-      head: [['Data', 'Adversário', 'Jogadores', 'Convidados', 'A receber', 'Recebido', 'Em falta', 'Custo']],
+      head: [['Data', 'Adversário', 'Jog.', 'Conv.', 'Crianças', 'A receber', 'Recebido', 'Em falta', 'Custo']],
       body: dinners.map((d) => {
         const s = summarizeDinner(d)
         return [
@@ -194,6 +194,7 @@ export function exportSeasonToPDF(season: SeasonData) {
           d.opponent,
           String(s.players),
           String(s.guests),
+          String(s.children),
           formatEuro(s.expected),
           formatEuro(s.received),
           formatEuro(s.missing),
@@ -212,7 +213,7 @@ export function exportSeasonToPDF(season: SeasonData) {
         head: [[`${formatDinnerDate(d.date)} · vs ${d.opponent || 'adversário'}`, 'Tipo', 'Valor', 'Pagou']],
         body: attendees.map((a) => [
           a.name,
-          a.kind === 'guest' ? 'Convidado' : 'Jogador',
+          ATTENDEE_LABELS[a.kind],
           formatEuro(attendeeFee(d, a)),
           a.paid ? `Sim (${methodLabel(a.method).toLowerCase()})` : 'Não',
         ]),
