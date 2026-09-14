@@ -20,7 +20,7 @@ import {
   monthOutflowTotal,
   seasonFinalBalance,
 } from './calc'
-import { loadData, saveData } from './storage'
+import { loadData, normalizeAppData, saveData } from './storage'
 import { useCloudSync } from './useCloudSync'
 import type { CloudState } from './useCloudSync'
 
@@ -92,9 +92,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setDataState((prev) => updater(prev))
   }, [])
 
-  // Substitui tudo pelo que veio da nuvem (ou de outro aparelho).
+  // Substitui tudo pelo que veio da nuvem (ou de outro aparelho). Passa pela
+  // normalização: o que está na nuvem pode ter sido gravado por uma versão mais
+  // antiga da app, sem os campos que entretanto apareceram.
   const applyRemote = useCallback((incoming: AppData) => {
-    setDataState(incoming)
+    setDataState(normalizeAppData(incoming))
   }, [])
 
   const { cloud, cloudActions } = useCloudSync(data, applyRemote)

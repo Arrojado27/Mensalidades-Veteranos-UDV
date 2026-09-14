@@ -101,7 +101,12 @@ function migrateSeasonToV4(season: SeasonData): SeasonData {
   }
 }
 
-function migrateData(data: AppData): AppData {
+/**
+ * Põe os dados na forma atual, venham de onde vierem: do armazenamento deste
+ * aparelho, de um backup ou da nuvem. Sem isto, dados gravados antes de um campo
+ * existir voltam sem ele e as contas dão valores em falta.
+ */
+export function normalizeAppData(data: AppData): AppData {
   const version = data.version ?? 1
   if (version >= DATA_VERSION) {
     // Mesmo já na versão atual, garante a forma dos dados (backups manuais, etc.).
@@ -126,7 +131,7 @@ export function loadData(): AppData {
     if (!parsed.seasons || parsed.seasons.length === 0) {
       return createInitialData()
     }
-    const migrated = migrateData(parsed)
+    const migrated = normalizeAppData(parsed)
     if ((parsed.version ?? 1) < DATA_VERSION) saveData(migrated)
     return migrated
   } catch {
@@ -161,7 +166,7 @@ export function importBackup(file: File): Promise<AppData> {
           reject(new Error('Ficheiro inválido: não parece ser um backup desta app.'))
           return
         }
-        resolve(migrateData(parsed))
+        resolve(normalizeAppData(parsed))
       } catch {
         reject(new Error('Não foi possível ler o ficheiro. Confirma que é um backup .json válido.'))
       }
