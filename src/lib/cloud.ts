@@ -28,12 +28,12 @@ import type { AppData } from '../types'
 // Config do projeto Firebase (consola > Definições do projeto > As suas apps).
 // Enquanto estiver vazia, a app funciona na mesma, só sem sincronização.
 const PROJECT = {
-  apiKey: '',
-  authDomain: '',
-  projectId: '',
-  storageBucket: '',
-  messagingSenderId: '',
-  appId: '',
+  apiKey: 'AIzaSyBuPdLmNjfctPn-me7K35If8JGLn54QIEc',
+  authDomain: 'veteranos-udv.firebaseapp.com',
+  projectId: 'veteranos-udv',
+  storageBucket: 'veteranos-udv.firebasestorage.app',
+  messagingSenderId: '257474229618',
+  appId: '1:257474229618:web:1a1470ea7f307f240a99eb',
 }
 
 const firebaseConfig = {

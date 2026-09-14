@@ -39,6 +39,12 @@ function errorMessage(err: unknown): string {
   if (code === 'auth/user-not-found') return 'Não há conta com esse email.'
   if (code === 'auth/too-many-requests') return 'Demasiadas tentativas. Espera um pouco.'
   if (code === 'auth/network-request-failed') return 'Sem ligação à internet.'
+  if (code === 'auth/unauthorized-domain') {
+    return 'Este endereço não está autorizado no Firebase (Authentication > Definições > Domínios autorizados).'
+  }
+  if (code === 'auth/operation-not-allowed') {
+    return 'Falta ativar o início de sessão por email/palavra-passe no Firebase.'
+  }
   if (code === 'permission-denied') return 'Sem permissão para aceder a estes dados.'
   return (err as Error)?.message ?? 'Não foi possível sincronizar.'
 }
