@@ -21,7 +21,8 @@ function nextSeasonLabel(startYear: number) {
 }
 
 export function Settings() {
-  const { data, season, setData, setMonthlyFee, setDinnerFees, createSeason } = useData()
+  const { data, season, setData, setMonthlyFee, setDinnerFees, createSeason, cloud, cloudActions } =
+    useData()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [feeInput, setFeeInput] = useState(amountToInput(season.monthlyFee))
   const [playerFeeInput, setPlayerFeeInput] = useState(amountToInput(season.dinnerPlayerFee))
@@ -35,6 +36,9 @@ export function Settings() {
   const [carryDebts, setCarryDebts] = useState(true)
   const [pinDraft, setPinDraft] = useState('')
   const [theme, setTheme] = useState<ThemePreference>(() => loadThemePreference())
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [signingIn, setSigningIn] = useState(false)
 
   const pendingDebts = useMemo(() => buildCarriedDebts(season), [season])
   const pendingTotal = pendingDebts.reduce((sum, d) => sum + d.amount, 0)
@@ -275,6 +279,79 @@ export function Settings() {
           </div>
         </section>
 
+        {cloud.ready && (
+          <section className="card card-glass p-4">
+            <h2 className="section-title mb-2">Sincronização</h2>
+            {cloud.email ? (
+              <>
+                <p className="text-[13px] text-muted">
+                  Ligado como <span className="font-semibold text-ink">{cloud.email}</span>.
+                </p>
+                <p className="mt-1 text-[12px] text-subtle">
+                  {cloud.status === 'saving'
+                    ? 'A guardar...'
+                    : cloud.status === 'error'
+                      ? cloud.error
+                      : cloud.lastSync
+                        ? `Guardado na nuvem às ${cloud.lastSync.toLocaleTimeString('pt-PT', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}`
+                        : 'A ligar...'}
+                </p>
+                <button
+                  onClick={() => void cloudActions.signOut()}
+                  className="btn btn-soft mt-3 w-full"
+                >
+                  Terminar sessão neste aparelho
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="mb-3 text-[13px] leading-relaxed text-muted">
+                  Entra com a tua conta para os dados ficarem guardados fora do telemóvel e
+                  acompanharem qualquer aparelho onde entres.
+                </p>
+                <label className="mb-2 block">
+                  <span className="label">Email</span>
+                  <input
+                    type="email"
+                    autoComplete="username"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="field"
+                  />
+                </label>
+                <label className="mb-3 block">
+                  <span className="label">Palavra-passe</span>
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="field"
+                  />
+                </label>
+                <button
+                  disabled={signingIn || !email || !password}
+                  onClick={() => {
+                    setSigningIn(true)
+                    cloudActions
+                      .signIn(email, password)
+                      .then(() => setPassword(''))
+                      .catch(() => {})
+                      .finally(() => setSigningIn(false))
+                  }}
+                  className="btn btn-primary w-full disabled:opacity-50"
+                >
+                  {signingIn ? 'A entrar...' : 'Entrar'}
+                </button>
+                {cloud.error && <p className="mt-2 text-[12px] text-danger">{cloud.error}</p>}
+              </>
+            )}
+          </section>
+        )}
+
         <section className="card card-glass p-4">
           <h2 className="section-title mb-2">Cópia de segurança</h2>
           <p className="mb-3 text-[13px] leading-relaxed text-muted">
@@ -358,6 +435,48 @@ export function Settings() {
                 <span>{label}</span>
               </label>
             ))}
+          </div>
+        </Sheet>
+      )}
+
+      {cloud.conflict && (
+        <Sheet
+          title="Há dados na nuvem e neste telemóvel"
+          subtitle="Escolhe quais ficam. O outro lado é substituído — nada é apagado sem esta escolha."
+          onClose={() => {}}
+          footer={
+            <>
+              <button onClick={() => cloudActions.keepLocal()} className="btn btn-soft flex-1">
+                Ficam os deste telemóvel
+              </button>
+              <button onClick={() => cloudActions.keepCloud()} className="btn btn-primary flex-1">
+                Ficam os da nuvem
+              </button>
+            </>
+          }
+        >
+          <div className="flex flex-col gap-2">
+            <div className="card-flat p-3">
+              <p className="text-[12px] font-semibold text-subtle">NA NUVEM</p>
+              <p className="mt-1 text-[13px]">
+                {cloud.conflict.data.seasons.length} época
+                {cloud.conflict.data.seasons.length === 1 ? '' : 's'} ·{' '}
+                {cloud.conflict.data.seasons.reduce((n, s) => n + s.players.length, 0)} jogadores
+              </p>
+              <p className="text-[12px] text-subtle">
+                {cloud.conflict.updatedAt
+                  ? `Guardado a ${cloud.conflict.updatedAt.toLocaleString('pt-PT')}`
+                  : 'Sem data'}
+                {cloud.conflict.device ? ` · ${cloud.conflict.device}` : ''}
+              </p>
+            </div>
+            <div className="card-flat p-3">
+              <p className="text-[12px] font-semibold text-subtle">NESTE TELEMÓVEL</p>
+              <p className="mt-1 text-[13px]">
+                {data.seasons.length} época{data.seasons.length === 1 ? '' : 's'} ·{' '}
+                {data.seasons.reduce((n, s) => n + s.players.length, 0)} jogadores
+              </p>
+            </div>
           </div>
         </Sheet>
       )}

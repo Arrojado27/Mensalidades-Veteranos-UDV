@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Cada conta só lê e escreve o seu próprio documento. Sem sessão iniciada,
+    // ninguém lê nem escreve nada.
+    match /vaults/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

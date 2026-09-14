@@ -22,7 +22,7 @@ import { MONTH_KEYS } from '../types'
 import type { MonthKey, Player } from '../types'
 
 export function Dashboard() {
-  const { season, setPayment } = useData()
+  const { season, setPayment, cloud } = useData()
   const [editing, setEditing] = useState<{ player: Player; month: MonthKey } | null>(null)
 
   const currentMonthKey = getCurrentMonthKey(season)
@@ -53,6 +53,16 @@ export function Dashboard() {
       />
 
       <div className="flex flex-1 flex-col gap-3.5 px-4 pt-4">
+        {cloud.status === 'error' && (
+          <Link
+            to="/definicoes"
+            className="card card-glass border-danger/30 px-4 py-3 text-[13px] leading-relaxed"
+          >
+            <span className="font-semibold text-danger">Sincronização parada.</span>{' '}
+            {cloud.error} Os dados continuam guardados neste telemóvel.
+          </Link>
+        )}
+
         {seasonEnded && (
           <div className="card card-glass border-brand-gold/30 bg-brand-gold/10 px-4 py-3 text-[13px] leading-relaxed">
             A época {season.label} terminou. Cria a nova época em{' '}

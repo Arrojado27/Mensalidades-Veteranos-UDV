@@ -48,11 +48,40 @@ de `dist/`. Algumas opções simples e gratuitas: GitHub Pages, Netlify, Vercel 
 Cloudflare Pages. Basta apontar o serviço escolhido para esta pasta e o comando
 `npm run build`.
 
+## Sincronização na nuvem (Firebase)
+
+Os dados vivem no telemóvel; com a sincronização ligada passam também a viver
+numa conta Firebase, o que os põe a salvo de perder o aparelho e permite usar a
+app em mais do que um sítio.
+
+Para ativar, na [consola Firebase](https://console.firebase.google.com):
+
+1. criar um projeto (Firestore em modo produção, região `eur3`);
+2. em **Authentication**, ativar **Email/Password** e criar o utilizador;
+3. registar uma app **Web** e copiar a configuração para `PROJECT`, em
+   `src/lib/cloud.ts` (esta configuração não é segredo: é feita para ir no
+   pacote do browser — quem manda no acesso são as regras);
+4. publicar as regras de `firestore.rules`, que só deixam cada conta ler e
+   escrever o seu próprio documento.
+
+Sem configuração preenchida, a app funciona na mesma e a secção de
+sincronização nem aparece nas Definições.
+
+Para experimentar sem tocar no projeto real, com os emuladores:
+
+```bash
+npx firebase emulators:start --only auth,firestore --project demo-veteranos
+VITE_FIREBASE_API_KEY=demo VITE_FIREBASE_PROJECT_ID=demo-veteranos \
+  VITE_USE_FIREBASE_EMULATOR=true npm run build && npm run preview
+```
+
 ## Notas importantes
 
-- **Backup**: como os dados só existem neste telemóvel, faz "Exportar backup" em
-  Definições regularmente (e sobretudo antes de trocar de telemóvel). O ficheiro
-  `.json` pode ser importado de volta em qualquer altura.
+- **Backup**: sem sincronização ligada, os dados só existem neste telemóvel —
+  faz "Exportar backup" em Definições regularmente, e sobretudo antes de
+  reinstalar a app ou trocar de aparelho (remover uma app instalada pode levar o
+  sistema a apagar o armazenamento do site). O ficheiro `.json` pode ser
+  importado de volta em qualquer altura.
 - **PIN**: opcional, em Definições, para bloquear o acesso à app.
 - **Nova época**: em Definições, "Criar nova época" cria a época seguinte (o nome e os
   meses são sugeridos automaticamente: 2026/27 arranca em setembro de 2026). Podes

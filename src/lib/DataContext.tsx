@@ -21,6 +21,8 @@ import {
   seasonFinalBalance,
 } from './calc'
 import { loadData, saveData } from './storage'
+import { useCloudSync } from './useCloudSync'
+import type { CloudState } from './useCloudSync'
 
 export interface NewSeasonOptions {
   label: string
@@ -61,6 +63,13 @@ interface DataContextValue {
   unsettleDebt: (debtId: string) => void
   removeDebt: (debtId: string) => void
   createSeason: (options: NewSeasonOptions) => void
+  cloud: CloudState
+  cloudActions: {
+    signIn: (email: string, password: string) => Promise<void>
+    signOut: () => Promise<void>
+    keepCloud: () => void
+    keepLocal: () => void
+  }
 }
 
 const DataContext = createContext<DataContextValue | null>(null)
@@ -81,6 +90,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const setData = useCallback((updater: (prev: AppData) => AppData) => {
     setDataState((prev) => updater(prev))
   }, [])
+
+  // Substitui tudo pelo que veio da nuvem (ou de outro aparelho).
+  const applyRemote = useCallback((incoming: AppData) => {
+    setDataState(incoming)
+  }, [])
+
+  const { cloud, cloudActions } = useCloudSync(data, applyRemote)
 
   const season = useMemo(
     () => data.seasons.find((s) => s.id === data.currentSeasonId) ?? data.seasons[0],
@@ -379,6 +395,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     unsettleDebt,
     removeDebt,
     createSeason,
+    cloud,
+    cloudActions,
   }
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>
