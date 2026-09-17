@@ -61,6 +61,8 @@ interface DataContextValue {
   removeAttendee: (dinnerId: string, attendeeId: string) => void
   addDebt: (debt: Omit<CarriedDebt, 'id'>) => void
   settleDebt: (debtId: string, settle: { month: MonthKey; method: PaymentMethod; amount: number }) => void
+  /** Liquida várias dívidas de uma vez, com a mesma data e forma de pagamento. */
+  settleDebts: (debtIds: string[], settle: { month: MonthKey; method: PaymentMethod }) => void
   unsettleDebt: (debtId: string) => void
   removeDebt: (debtId: string) => void
   createSeason: (options: NewSeasonOptions) => void
@@ -327,6 +329,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [updateSeason],
   )
 
+  const settleDebts = useCallback(
+    (debtIds: string[], settle: { month: MonthKey; method: PaymentMethod }) => {
+      const ids = new Set(debtIds)
+      const date = new Date().toISOString().slice(0, 10)
+      updateSeason((s) => ({
+        ...s,
+        carriedDebts: s.carriedDebts.map((d) =>
+          ids.has(d.id) ? { ...d, settled: { ...settle, date, amount: d.amount } } : d,
+        ),
+      }))
+    },
+    [updateSeason],
+  )
+
   const unsettleDebt = useCallback(
     (debtId: string) => {
       updateSeason((s) => ({
@@ -402,6 +418,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     removeAttendee,
     addDebt,
     settleDebt,
+    settleDebts,
     unsettleDebt,
     removeDebt,
     createSeason,

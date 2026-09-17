@@ -16,9 +16,9 @@ import { MONTH_KEYS, PAYMENT_METHODS, methodLabel } from '../types'
 import type { CarriedDebt, MonthKey, PaymentMethod } from '../types'
 
 export function Debts() {
-  const { season, settleDebt, unsettleDebt, removeDebt, addDebt } = useData()
+  const { season, settleDebt, settleDebts, unsettleDebt, removeDebt, addDebt } = useData()
   const navigate = useNavigate()
-  const [settling, setSettling] = useState<CarriedDebt | null>(null)
+  const [settling, setSettling] = useState<{ name: string; debts: CarriedDebt[] } | null>(null)
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState<PaymentMethod>('cash')
   const [month, setMonth] = useState<MonthKey>(getCurrentMonthKey(season) ?? MONTH_KEYS[0])
@@ -34,25 +34,61 @@ export function Debts() {
   const openTotal = open.reduce((sum, d) => sum + d.amount, 0)
   const settledTotal = settled.reduce((sum, d) => sum + (d.settled?.amount ?? 0), 0)
 
-  const grouped = useMemo(() => {
-    const map = new Map<string, { name: string; debts: CarriedDebt[]; total: number }>()
-    for (const d of open) {
-      const entry = map.get(d.playerId) ?? { name: d.playerName, debts: [], total: 0 }
-      entry.debts.push(d)
+  /**
+   * A ordem e a lista ficam presas ao que estava por cobrar quando o ecrã abriu:
+   * marcar um mês como pago não faz saltar aquilo em que se está a tocar. Só ao
+   * sair e voltar é que a lista se reorganiza.
+   */
+  const [frozen] = useState(() => {
+    const totals = new Map<string, { name: string; total: number }>()
+    const initial = openDebts(season)
+    for (const d of initial) {
+      const entry = totals.get(d.playerId) ?? { name: d.playerName, total: 0 }
       entry.total += d.amount
+      totals.set(d.playerId, entry)
+    }
+    return {
+      ids: new Set(initial.map((d) => d.id)),
+      order: [...totals.entries()]
+        .sort((a, b) => b[1].total - a[1].total || a[1].name.localeCompare(b[1].name, 'pt'))
+        .map(([playerId]) => playerId),
+    }
+  })
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, { playerId: string; name: string; debts: CarriedDebt[]; total: number }>()
+    for (const d of season.carriedDebts) {
+      // Mantém à vista as que já estavam abertas ao abrir o ecrã, mesmo depois
+      // de pagas; as pagas de outras vezes ficam só na secção "Já pagos".
+      if (d.settled && !frozen.ids.has(d.id)) continue
+      const entry = map.get(d.playerId) ?? {
+        playerId: d.playerId,
+        name: d.playerName,
+        debts: [],
+        total: 0,
+      }
+      entry.debts.push(d)
+      if (!d.settled) entry.total += d.amount
       map.set(d.playerId, entry)
     }
-    return [...map.values()].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, 'pt'))
-  }, [open])
+    const rank = (playerId: string) => {
+      const index = frozen.order.indexOf(playerId)
+      return index === -1 ? frozen.order.length : index
+    }
+    return [...map.values()].sort(
+      (a, b) => rank(a.playerId) - rank(b.playerId) || a.name.localeCompare(b.name, 'pt'),
+    )
+  }, [season.carriedDebts, frozen])
 
   const sortedPlayers = useMemo(
     () => [...season.players].sort((a, b) => a.name.localeCompare(b.name, 'pt')),
     [season.players],
   )
 
-  function openSettle(debt: CarriedDebt) {
-    setSettling(debt)
-    setAmount(amountToInput(debt.amount))
+  function openSettle(name: string, debts: CarriedDebt[]) {
+    if (debts.length === 0) return
+    setSettling({ name, debts })
+    setAmount(amountToInput(debts[0].amount))
     setMethod('cash')
     setMonth(getCurrentMonthKey(season) ?? MONTH_KEYS[0])
   }
@@ -84,29 +120,70 @@ export function Debts() {
               <div className="flex items-center justify-between gap-3 px-4 pt-4">
                 <h2 className="min-w-0 flex-1 truncate text-[15px] font-bold tracking-tight">{g.name}</h2>
                 <button
-                  onClick={() => setClearing({ name: g.name, ids: g.debts.map((d) => d.id) })}
+                  onClick={() =>
+                    setClearing({
+                      name: g.name,
+                      ids: g.debts.filter((d) => !d.settled).map((d) => d.id),
+                    })
+                  }
                   className="shrink-0 text-[11px] font-semibold text-muted"
                 >
-                  Apagar todas
+                  Apagar
                 </button>
-                <span className="shrink-0 rounded-full bg-brand-red/10 px-2.5 py-1 text-[12px] font-bold text-danger">
-                  {formatEuro(g.total)}
+                <span
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-[12px] font-bold ${
+                    g.total > 0 ? 'bg-danger-soft text-danger' : 'bg-ok-soft text-ok'
+                  }`}
+                >
+                  {g.total > 0 ? formatEuro(g.total) : 'tudo pago'}
                 </span>
               </div>
+
+              {g.debts.filter((d) => !d.settled).length > 1 && (
+                <button
+                  onClick={() =>
+                    openSettle(
+                      g.name,
+                      g.debts.filter((d) => !d.settled),
+                    )
+                  }
+                  className="btn btn-primary mx-4 mt-3 w-[calc(100%-2rem)]"
+                >
+                  Recebi tudo · {formatEuro(g.total)}
+                </button>
+              )}
               <ul className="mt-1 divide-y divide-line">
                 {g.debts.map((d) => (
                   <li key={d.id} className="flex items-center gap-2 px-4 py-2.5">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-medium">{d.monthLabel}</p>
-                      <p className="text-[11px] text-subtle">Época {d.fromSeasonLabel}</p>
+                      <p className={`truncate text-[14px] font-medium ${d.settled ? 'text-muted' : ''}`}>
+                        {d.monthLabel}
+                      </p>
+                      <p className="text-[11px] text-subtle">
+                        {d.settled
+                          ? `Recebido · entrou em ${monthLabel(season, d.settled.month)}`
+                          : `Época ${d.fromSeasonLabel}`}
+                      </p>
                     </div>
-                    <span className="shrink-0 text-[14px] font-semibold">{formatEuro(d.amount)}</span>
-                    <button
-                      onClick={() => openSettle(d)}
-                      className="btn btn-primary shrink-0 px-3 py-1.5 text-[12px]"
-                    >
-                      Recebi
-                    </button>
+                    <span className={`shrink-0 text-[14px] font-semibold ${d.settled ? 'text-ok' : ''}`}>
+                      {formatEuro(d.settled?.amount ?? d.amount)}
+                    </span>
+                    {d.settled ? (
+                      <button
+                        onClick={() => unsettleDebt(d.id)}
+                        aria-label={`Anular pagamento de ${d.monthLabel}`}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-ok-soft text-[14px] font-bold text-ok ring-1 ring-ok/35"
+                      >
+                        ✓
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => openSettle(g.name, [d])}
+                        className="btn btn-primary shrink-0 px-3 py-1.5 text-[12px]"
+                      >
+                        Recebi
+                      </button>
+                    )}
                     <button
                       onClick={() => removeDebt(d.id)}
                       aria-label="Remover dívida"
@@ -259,8 +336,14 @@ export function Debts() {
 
       {settling && (
         <Sheet
-          title={settling.playerName}
-          subtitle={`${settling.monthLabel} · época ${settling.fromSeasonLabel}`}
+          title={settling.name}
+          subtitle={
+            settling.debts.length === 1
+              ? `${settling.debts[0].monthLabel} · época ${settling.debts[0].fromSeasonLabel}`
+              : `${settling.debts.length} mensalidades · ${settling.debts
+                  .map((d) => d.monthLabel)
+                  .join(', ')}`
+          }
           onClose={() => setSettling(null)}
           footer={
             <>
@@ -269,9 +352,16 @@ export function Debts() {
               </button>
               <button
                 onClick={() => {
-                  const value = parseAmount(amount)
-                  if (!value) return
-                  settleDebt(settling.id, { month, method, amount: value })
+                  if (settling.debts.length === 1) {
+                    const value = parseAmount(amount)
+                    if (!value) return
+                    settleDebt(settling.debts[0].id, { month, method, amount: value })
+                  } else {
+                    settleDebts(
+                      settling.debts.map((d) => d.id),
+                      { month, method },
+                    )
+                  }
                   setSettling(null)
                 }}
                 className="btn btn-primary flex-1"
@@ -281,16 +371,25 @@ export function Debts() {
             </>
           }
         >
-          <label className="mb-3 block">
-            <span className="label">Valor recebido</span>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="field"
-            />
-          </label>
+          {settling.debts.length === 1 ? (
+            <label className="mb-3 block">
+              <span className="label">Valor recebido</span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="field"
+              />
+            </label>
+          ) : (
+            <div className="card-flat mb-3 flex items-center justify-between p-3">
+              <span className="text-[13px] text-muted">Total a receber</span>
+              <span className="text-[17px] font-bold">
+                {formatEuro(settling.debts.reduce((sum, d) => sum + d.amount, 0))}
+              </span>
+            </div>
+          )}
 
           <div className="mb-3">
             <span className="label">Como pagou</span>
