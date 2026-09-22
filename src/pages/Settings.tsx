@@ -14,6 +14,19 @@ import {
 import { exportBackup, importBackup, resetData, startYearFromLabel } from '../lib/storage'
 import { THEME_OPTIONS, applyTheme, loadThemePreference, saveThemePreference } from '../lib/theme'
 import type { ThemePreference } from '../lib/theme'
+import type { CloudVersion } from '../lib/cloud'
+import type { AppData } from '../types'
+
+/** O suficiente para se reconhecer uma cópia sem a abrir. */
+function versionSummary(snapshot: AppData) {
+  const current =
+    snapshot.seasons.find((s) => s.id === snapshot.currentSeasonId) ?? snapshot.seasons[0]
+  if (!current) return 'Sem épocas'
+  const owed = openDebts(current).reduce((sum, d) => sum + d.amount, 0)
+  return `${current.label} · ${current.players.length} jogadores · saldo ${formatEuro(
+    seasonFinalBalance(current),
+  )} · ${formatEuro(owed)} por cobrar`
+}
 
 function nextSeasonLabel(startYear: number) {
   const next = startYear + 1
@@ -40,6 +53,27 @@ export function Settings() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [signingIn, setSigningIn] = useState(false)
+  const [showVersions, setShowVersions] = useState(false)
+  const [versions, setVersions] = useState<CloudVersion[] | null>(null)
+  const [versionsError, setVersionsError] = useState<string | null>(null)
+  const [restoring, setRestoring] = useState<CloudVersion | null>(null)
+
+  function openVersions() {
+    setShowVersions(true)
+    setVersions(null)
+    setVersionsError(null)
+    cloudActions
+      .listVersions()
+      .then(setVersions)
+      .catch((err: { code?: string }) => {
+        setVersions([])
+        setVersionsError(
+          err?.code === 'permission-denied'
+            ? 'Falta publicar as regras novas do Firestore para as cópias poderem ser lidas.'
+            : 'Não foi possível ler as cópias guardadas.',
+        )
+      })
+  }
 
   const pendingDebts = useMemo(() => buildCarriedDebts(season), [season])
   const pendingTotal = pendingDebts.reduce((sum, d) => sum + d.amount, 0)
@@ -305,6 +339,14 @@ export function Settings() {
                           })}`
                         : 'A ligar...'}
                 </p>
+                <button onClick={openVersions} className="btn btn-soft mt-3 w-full">
+                  Cópias guardadas na nuvem
+                </button>
+                <p className="mt-2 text-[12px] leading-relaxed text-subtle">
+                  A app guarda as últimas 20 cópias, uma de dez em dez minutos de utilização, mais
+                  uma sempre que se escolhe entre a nuvem e o aparelho. Dá para voltar a qualquer
+                  uma delas.
+                </p>
                 <button
                   onClick={() => void cloudActions.signOut()}
                   className="btn btn-soft mt-3 w-full"
@@ -485,6 +527,71 @@ export function Settings() {
             </div>
           </div>
         </Sheet>
+      )}
+
+      {showVersions && (
+        <Sheet
+          title="Cópias guardadas"
+          subtitle="Voltar a um estado anterior dos dados"
+          onClose={() => setShowVersions(false)}
+          scroll
+        >
+          {versions === null ? (
+            <p className="py-6 text-center text-[13px] text-muted">A ler as cópias...</p>
+          ) : versionsError ? (
+            <p className="py-6 text-center text-[13px] text-danger">{versionsError}</p>
+          ) : versions.length === 0 ? (
+            <p className="py-6 text-center text-[13px] text-muted">
+              Ainda não há cópias. A primeira é guardada na próxima gravação.
+            </p>
+          ) : (
+            <ul className="divide-y divide-line">
+              {versions.map((v) => (
+                <li key={v.id} className="flex items-center gap-3 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-semibold">
+                      {v.savedAt
+                        ? v.savedAt.toLocaleString('pt-PT', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : 'Sem data'}
+                      {v.device ? ` · ${v.device}` : ''}
+                    </p>
+                    <p className="mt-0.5 text-[12px] text-muted">{versionSummary(v.data)}</p>
+                    {v.reason && <p className="text-[11px] text-subtle">{v.reason}</p>}
+                  </div>
+                  <button
+                    onClick={() => setRestoring(v)}
+                    className="btn btn-soft shrink-0 px-3 py-1.5 text-[12px]"
+                  >
+                    Repor
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Sheet>
+      )}
+
+      {restoring && (
+        <ConfirmDialog
+          title="Voltar a esta cópia?"
+          description={`Os dados passam a ser os de ${
+            restoring.savedAt ? restoring.savedAt.toLocaleString('pt-PT') : 'esta cópia'
+          } — ${versionSummary(
+            restoring.data,
+          )}. O estado atual fica guardado como cópia, por isso dá para voltar atrás.`}
+          confirmLabel="Repor"
+          onClose={() => setRestoring(null)}
+          onConfirm={() => {
+            void cloudActions.restoreVersion(restoring)
+            setRestoring(null)
+            setShowVersions(false)
+          }}
+        />
       )}
 
       {confirmReset && (

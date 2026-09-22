@@ -23,6 +23,7 @@ import {
 import { loadData, normalizeAppData, saveData } from './storage'
 import { useCloudSync } from './useCloudSync'
 import type { CloudState } from './useCloudSync'
+import type { CloudVersion } from './cloud'
 
 export interface NewSeasonOptions {
   label: string
@@ -72,6 +73,8 @@ interface DataContextValue {
     signOut: () => Promise<void>
     keepCloud: () => void
     keepLocal: () => void
+    listVersions: () => Promise<CloudVersion[]>
+    restoreVersion: (version: CloudVersion) => Promise<void>
   }
 }
 

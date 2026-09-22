@@ -6,6 +6,13 @@ service cloud.firestore {
     // ninguém lê nem escreve nada.
     match /vaults/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      // As cópias antigas do mesmo estado, para se poder voltar atrás. As regras
+      // não descem sozinhas para as subcoleções: sem isto, ninguém lê nem grava
+      // aqui, nem o próprio dono.
+      match /versions/{versionId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
     }
   }
 }

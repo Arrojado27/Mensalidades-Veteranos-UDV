@@ -10,13 +10,20 @@ import {
 } from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import {
+  addDoc,
+  collection,
   connectFirestoreEmulator,
   doc,
   getDoc,
+  getDocs,
   getFirestore,
+  limit,
   onSnapshot,
+  orderBy,
+  query,
   serverTimestamp,
   setDoc,
+  writeBatch,
 } from 'firebase/firestore'
 import type { AppData } from '../types'
 
@@ -70,10 +77,82 @@ export interface CloudSnapshot {
   device: string
 }
 
+/** Uma cópia datada do estado, guardada para se poder voltar atrás. */
+export interface CloudVersion {
+  id: string
+  data: AppData
+  savedAt: Date | null
+  device: string
+  reason: string
+}
+
+/** Quantas cópias antigas ficam guardadas. As mais velhas vão sendo apagadas. */
+export const MAX_CLOUD_VERSIONS = 20
+
 /** Um documento por conta: o estado da app inteiro, em JSON. */
 function vaultRef(uid: string) {
   if (!db) throw new Error('Sincronização não configurada.')
   return doc(db, 'vaults', uid)
+}
+
+/**
+ * As cópias antigas vivem numa subcoleção do documento da conta. Ficam à parte
+ * do estado atual: gravar não mexe nas cópias e apagar cópias não mexe no que
+ * está em uso.
+ */
+function versionsRef(uid: string) {
+  if (!db) throw new Error('Sincronização não configurada.')
+  return collection(db, 'vaults', uid, 'versions')
+}
+
+export async function saveVersion(uid: string, data: AppData, device: string, reason: string) {
+  await addDoc(versionsRef(uid), {
+    payload: JSON.stringify(data),
+    // Hora do aparelho, não do servidor: o serverTimestamp só fica preenchido
+    // depois de o servidor responder, e até lá a cópia acabada de gravar ficava
+    // no fim da ordenação — a primeira a ser apagada pela limpeza.
+    savedAt: Date.now(),
+    device,
+    reason,
+  })
+}
+
+/** As cópias mais recentes primeiro. */
+export async function listVersions(uid: string, max = MAX_CLOUD_VERSIONS): Promise<CloudVersion[]> {
+  const snap = await getDocs(query(versionsRef(uid), orderBy('savedAt', 'desc'), limit(max)))
+  const versions: CloudVersion[] = []
+  for (const document of snap.docs) {
+    const value = document.data() as {
+      payload?: string
+      savedAt?: number
+      device?: string
+      reason?: string
+    }
+    if (typeof value.payload !== 'string') continue
+    try {
+      versions.push({
+        id: document.id,
+        data: JSON.parse(value.payload) as AppData,
+        savedAt: typeof value.savedAt === 'number' ? new Date(value.savedAt) : null,
+        device: value.device ?? '',
+        reason: value.reason ?? '',
+      })
+    } catch {
+      // Uma cópia ilegível não pode esconder as outras.
+    }
+  }
+  return versions
+}
+
+/** Deixa só as `keep` mais recentes. */
+export async function pruneVersions(uid: string, keep = MAX_CLOUD_VERSIONS) {
+  if (!db) return
+  const snap = await getDocs(query(versionsRef(uid), orderBy('savedAt', 'desc')))
+  const extra = snap.docs.slice(keep)
+  if (extra.length === 0) return
+  const batch = writeBatch(db)
+  extra.forEach((document) => batch.delete(document.ref))
+  await batch.commit()
 }
 
 export function watchUser(callback: (user: User | null) => void) {
