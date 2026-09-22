@@ -41,17 +41,23 @@ export function Sheet({
   )
 }
 
-/** Diálogo central, para confirmar ações destrutivas. */
+/**
+ * Diálogo central, para confirmar uma ação antes de ela acontecer. O `tone`
+ * separa o que apaga (vermelho) do que regista dinheiro recebido (normal), para
+ * não haver dois botões iguais a fazer coisas opostas.
+ */
 export function ConfirmDialog({
   title,
   description,
   confirmLabel = 'Confirmar',
+  tone = 'primary',
   onConfirm,
   onClose,
 }: {
   title: string
   description: string
   confirmLabel?: string
+  tone?: 'primary' | 'danger'
   onConfirm: () => void
   onClose: () => void
 }) {
@@ -71,7 +77,10 @@ export function ConfirmDialog({
           <button onClick={onClose} className="btn btn-soft flex-1">
             Cancelar
           </button>
-          <button onClick={onConfirm} className="btn btn-primary flex-1">
+          <button
+            onClick={onConfirm}
+            className={`btn flex-1 ${tone === 'danger' ? 'btn-danger' : 'btn-primary'}`}
+          >
             {confirmLabel}
           </button>
         </div>

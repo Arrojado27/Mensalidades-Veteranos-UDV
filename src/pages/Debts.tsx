@@ -23,6 +23,8 @@ export function Debts() {
   const [method, setMethod] = useState<PaymentMethod>('cash')
   const [month, setMonth] = useState<MonthKey>(getCurrentMonthKey(season) ?? MONTH_KEYS[0])
   const [clearing, setClearing] = useState<{ name: string; ids: string[] } | null>(null)
+  const [dropping, setDropping] = useState<CarriedDebt | null>(null)
+  const [confirmAll, setConfirmAll] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [newPlayerId, setNewPlayerId] = useState('')
   const [newLabel, setNewLabel] = useState('')
@@ -119,17 +121,6 @@ export function Debts() {
             <section key={g.name + g.debts[0].id} className="card overflow-hidden">
               <div className="flex items-center justify-between gap-3 px-4 pt-4">
                 <h2 className="min-w-0 flex-1 truncate text-[15px] font-bold tracking-tight">{g.name}</h2>
-                <button
-                  onClick={() =>
-                    setClearing({
-                      name: g.name,
-                      ids: g.debts.filter((d) => !d.settled).map((d) => d.id),
-                    })
-                  }
-                  className="shrink-0 text-[11px] font-semibold text-muted"
-                >
-                  Apagar
-                </button>
                 <span
                   className={`shrink-0 rounded-full px-2.5 py-1 text-[12px] font-bold ${
                     g.total > 0 ? 'bg-danger-soft text-danger' : 'bg-ok-soft text-ok'
@@ -185,8 +176,8 @@ export function Debts() {
                       </button>
                     )}
                     <button
-                      onClick={() => removeDebt(d.id)}
-                      aria-label="Remover dívida"
+                      onClick={() => setDropping(d)}
+                      aria-label={`Apagar a dívida de ${d.monthLabel}`}
                       className="shrink-0 px-1 text-subtle"
                     >
                       ✕
@@ -194,6 +185,21 @@ export function Debts() {
                   </li>
                 ))}
               </ul>
+              {g.debts.some((d) => !d.settled) && (
+                <div className="border-t border-line px-4 py-2.5">
+                  <button
+                    onClick={() =>
+                      setClearing({
+                        name: g.name,
+                        ids: g.debts.filter((d) => !d.settled).map((d) => d.id),
+                      })
+                    }
+                    className="text-[12px] font-semibold text-muted"
+                  >
+                    Apagar estes atrasados (não pagou)
+                  </button>
+                </div>
+              )}
             </section>
           ))
         )}
@@ -253,10 +259,25 @@ export function Debts() {
           title={`Apagar os atrasados de ${clearing.name}?`}
           description={`Deixa de haver ${clearing.ids.length} mensalidade${clearing.ids.length === 1 ? '' : 's'} por cobrar a este jogador. Usa isto quando ele afinal não devia nada — por exemplo, se só entrou para o grupo esta época.`}
           confirmLabel="Apagar"
+          tone="danger"
           onClose={() => setClearing(null)}
           onConfirm={() => {
             clearing.ids.forEach((id) => removeDebt(id))
             setClearing(null)
+          }}
+        />
+      )}
+
+      {dropping && (
+        <ConfirmDialog
+          title={`Apagar ${dropping.monthLabel}?`}
+          description={`Deixa de contar como dívida de ${dropping.playerName} — ${formatEuro(dropping.amount)} que já não vais cobrar. Não é o mesmo que "Recebi": isto não entra na caixa.`}
+          confirmLabel="Apagar"
+          tone="danger"
+          onClose={() => setDropping(null)}
+          onConfirm={() => {
+            removeDebt(dropping.id)
+            setDropping(null)
           }}
         />
       )}
@@ -352,21 +373,20 @@ export function Debts() {
               </button>
               <button
                 onClick={() => {
-                  if (settling.debts.length === 1) {
-                    const value = parseAmount(amount)
-                    if (!value) return
-                    settleDebt(settling.debts[0].id, { month, method, amount: value })
-                  } else {
-                    settleDebts(
-                      settling.debts.map((d) => d.id),
-                      { month, method },
-                    )
+                  if (settling.debts.length > 1) {
+                    setConfirmAll(true)
+                    return
                   }
+                  const value = parseAmount(amount)
+                  if (!value) return
+                  settleDebt(settling.debts[0].id, { month, method, amount: value })
                   setSettling(null)
                 }}
                 className="btn btn-primary flex-1"
               >
-                Registar
+                {settling.debts.length > 1
+                  ? `Registar ${settling.debts.length} meses`
+                  : 'Registar'}
               </button>
             </>
           }
@@ -423,6 +443,25 @@ export function Debts() {
             </select>
           </label>
         </Sheet>
+      )}
+
+      {settling && confirmAll && (
+        <ConfirmDialog
+          title={`Receber ${settling.debts.length} mensalidades?`}
+          description={`${settling.name} · ${settling.debts.map((d) => d.monthLabel).join(', ')}. Total ${formatEuro(
+            settling.debts.reduce((sum, d) => sum + d.amount, 0),
+          )} em ${methodLabel(method).toLowerCase()}, a entrar na caixa em ${monthLabel(season, month)}.`}
+          confirmLabel="Confirmar"
+          onClose={() => setConfirmAll(false)}
+          onConfirm={() => {
+            settleDebts(
+              settling.debts.map((d) => d.id),
+              { month, method },
+            )
+            setConfirmAll(false)
+            setSettling(null)
+          }}
+        />
       )}
     </div>
   )
