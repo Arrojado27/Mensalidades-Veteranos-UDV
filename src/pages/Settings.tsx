@@ -305,13 +305,21 @@ export function Settings() {
           </p>
           <div className="flex gap-2">
             <button
-              onClick={() => import('../lib/exportReports').then((m) => m.exportSeasonToExcel(season))}
+              onClick={() =>
+                import('../lib/exportReports').then((m) =>
+                  m.exportSeasonToExcel(season, data.seasons),
+                )
+              }
               className="btn btn-primary flex-1"
             >
               Excel (.xlsx)
             </button>
             <button
-              onClick={() => import('../lib/exportReports').then((m) => m.exportSeasonToPDF(season))}
+              onClick={() =>
+                import('../lib/exportReports').then((m) =>
+                  m.exportSeasonToPDF(season, data.seasons),
+                )
+              }
               className="btn btn-soft flex-1"
             >
               PDF

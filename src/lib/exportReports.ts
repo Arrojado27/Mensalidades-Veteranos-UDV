@@ -21,10 +21,74 @@ import {
 import { ATTENDEE_LABELS, MONTH_KEYS, methodLabel, methodShort } from '../types'
 import type { MonthKey, SeasonData } from '../types'
 
-function cellLabel(season: SeasonData, playerId: string, monthKey: MonthKey) {
+/** Um mês desta época que só foi cobrado numa época seguinte, via Atrasados. */
+interface LatePayment {
+  playerId: string
+  playerName: string
+  month: MonthKey
+  monthLabel: string
+  amount: number
+  /** A época em que o dinheiro entrou na caixa. */
+  seasonLabel: string
+  /** O mês dessa época em que entrou. */
+  receivedIn: string
+  method: string
+  methodShort: string
+}
+
+function lateKey(playerId: string, month: MonthKey) {
+  return `${playerId}|${month}`
+}
+
+/**
+ * Cobrar um atraso não mexe no mapa da época de origem — é de propósito, senão
+ * o saldo de fecho dessa época mudava depois de fechada. Mas quem olha para o
+ * mapa dessa época fica a ver um mês por pagar que afinal já foi pago. Isto vai
+ * buscar esses pagamentos às épocas seguintes, para se poder anotar sem mexer
+ * nas contas.
+ */
+function latePayments(season: SeasonData, seasons: SeasonData[]): Map<string, LatePayment> {
+  const found = new Map<string, LatePayment>()
+  for (const other of seasons) {
+    if (other.id === season.id) continue
+    for (const debt of other.carriedDebts) {
+      if (debt.fromSeasonId !== season.id || !debt.settled) continue
+      found.set(lateKey(debt.playerId, debt.month), {
+        playerId: debt.playerId,
+        playerName: debt.playerName,
+        month: debt.month,
+        monthLabel: debt.monthLabel,
+        amount: debt.settled.amount,
+        seasonLabel: other.label,
+        receivedIn: monthLabel(other, debt.settled.month),
+        method: methodLabel(debt.settled.method),
+        methodShort: methodShort(debt.settled.method),
+      })
+    }
+  }
+  return found
+}
+
+function lateTotal(late: Map<string, LatePayment>, playerId: string) {
+  let sum = 0
+  for (const entry of late.values()) if (entry.playerId === playerId) sum += entry.amount
+  return sum
+}
+
+function cellLabel(
+  season: SeasonData,
+  playerId: string,
+  monthKey: MonthKey,
+  late?: Map<string, LatePayment>,
+) {
   const player = season.players.find((p) => p.id === playerId)
   const entry = player?.payments[monthKey]
-  if (!entry || entry.status === 'pending') return ''
+  if (!entry || entry.status === 'pending') {
+    // Ficou por pagar nesta época, mas foi cobrado mais tarde: fica assinalado,
+    // com a época em que o dinheiro entrou.
+    const paidLater = late?.get(lateKey(playerId, monthKey))
+    return paidLater ? `${paidLater.methodShort} (${paidLater.seasonLabel})` : ''
+  }
   if (entry.status === 'exempt') return '-'
   const label = methodShort(entry.method)
   const amount = amountForEntry(entry.status, entry.amount, season.monthlyFee)
@@ -59,19 +123,39 @@ function download(blob: Blob, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-export function exportSeasonToExcel(season: SeasonData) {
+export function exportSeasonToExcel(season: SeasonData, seasons: SeasonData[] = [season]) {
   const players = [...season.players].sort((a, b) => a.name.localeCompare(b.name, 'pt'))
   const months = seasonMonths(season)
+  const late = latePayments(season, seasons)
 
   const mensalidadesRows = players.map((p) => {
     const row: Record<string, string | number> = { Jogador: p.name }
     for (const m of months) {
-      row[`${m.label} ${m.year}`] = cellLabel(season, p.id, m.key)
+      row[`${m.label} ${m.year}`] = cellLabel(season, p.id, m.key, late)
     }
-    row['Total pago (€)'] = playerTotal(season, p.id)
+    // Duas colunas separadas de propósito: o total desta época é o dinheiro que
+    // entrou na caixa desta época, e é esse que fecha com o saldo. O que foi
+    // cobrado depois entrou na caixa de outra época e não pode ser somado aqui.
+    row['Total pago na época (€)'] = playerTotal(season, p.id)
+    row['Cobrado mais tarde (€)'] = lateTotal(late, p.id)
     row['No grupo'] = p.active ? 'Sim' : 'Não'
     return row
   })
+
+  const cobradosDepoisRows = [...late.values()]
+    .sort(
+      (a, b) =>
+        a.playerName.localeCompare(b.playerName, 'pt') ||
+        MONTH_KEYS.indexOf(a.month) - MONTH_KEYS.indexOf(b.month),
+    )
+    .map((l) => ({
+      Jogador: l.playerName,
+      'Mês em falta': l.monthLabel,
+      'Valor (€)': l.amount,
+      'Cobrado na época': l.seasonLabel,
+      'Entrou na caixa em': l.receivedIn,
+      'Como pagou': l.method,
+    }))
 
   const despesasRows = season.expenses
     .slice()
@@ -136,15 +220,23 @@ export function exportSeasonToExcel(season: SeasonData) {
   if (atrasadosRows.length > 0) {
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(atrasadosRows), 'Atrasados')
   }
+  if (cobradosDepoisRows.length > 0) {
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(cobradosDepoisRows),
+      'Cobrados mais tarde',
+    )
+  }
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(saldoRows), 'Saldo')
 
   const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
   download(new Blob([out], { type: 'application/octet-stream' }), `${fileNameBase(season)}.xlsx`)
 }
 
-export function exportSeasonToPDF(season: SeasonData) {
+export function exportSeasonToPDF(season: SeasonData, seasons: SeasonData[] = [season]) {
   const players = [...season.players].sort((a, b) => a.name.localeCompare(b.name, 'pt'))
   const months = seasonMonths(season)
+  const late = latePayments(season, seasons)
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
   const brandRed: [number, number, number] = [164, 31, 36]
 
@@ -162,15 +254,30 @@ export function exportSeasonToPDF(season: SeasonData) {
     40,
     56,
   )
-  doc.text('Legenda: T = Transferência (inclui Multibanco) · € = Numerário · - = Isento', 40, 68)
+  doc.text(
+    'Legenda: T = Transferência (inclui Multibanco) · € = Numerário · - = Isento' +
+      (late.size > 0
+        ? ' · T/€ com uma época entre parênteses = ficou por pagar aqui e foi cobrado nessa época'
+        : ''),
+    40,
+    68,
+  )
 
   autoTable(doc, {
     startY: 82,
-    head: [['Jogador', ...months.map((m) => m.label), 'Total (€)']],
+    head: [
+      [
+        'Jogador',
+        ...months.map((m) => m.label),
+        'Total (€)',
+        ...(late.size > 0 ? ['Depois (€)'] : []),
+      ],
+    ],
     body: players.map((p) => [
       p.name + (p.active ? '' : ' (saiu)'),
-      ...months.map((m) => cellLabel(season, p.id, m.key)),
+      ...months.map((m) => cellLabel(season, p.id, m.key, late)),
       playerTotal(season, p.id).toString(),
+      ...(late.size > 0 ? [lateTotal(late, p.id).toString()] : []),
     ]),
     styles: { fontSize: 8, cellPadding: 4 },
     headStyles: { fillColor: brandRed, textColor: 255 },
@@ -243,6 +350,42 @@ export function exportSeasonToPDF(season: SeasonData) {
       styles: { fontSize: 9, cellPadding: 5 },
       headStyles: { fillColor: brandRed, textColor: 255 },
       tableWidth: 500,
+    })
+  }
+
+  if (late.size > 0) {
+    doc.addPage()
+    doc.setFontSize(16)
+    doc.setTextColor(...brandRed)
+    doc.text('Meses desta época cobrados mais tarde', 40, 40)
+    doc.setFontSize(9)
+    doc.setTextColor(90)
+    doc.text(
+      'Este dinheiro entrou na caixa da época em que foi cobrado, não nesta — o saldo desta época não o inclui.',
+      40,
+      56,
+    )
+
+    autoTable(doc, {
+      startY: 70,
+      head: [['Jogador', 'Mês em falta', 'Valor', 'Cobrado na época', 'Entrou em', 'Como pagou']],
+      body: [...late.values()]
+        .sort(
+          (a, b) =>
+            a.playerName.localeCompare(b.playerName, 'pt') ||
+            MONTH_KEYS.indexOf(a.month) - MONTH_KEYS.indexOf(b.month),
+        )
+        .map((l) => [
+          l.playerName,
+          l.monthLabel,
+          formatEuro(l.amount),
+          l.seasonLabel,
+          l.receivedIn,
+          l.method,
+        ]),
+      styles: { fontSize: 9, cellPadding: 5 },
+      headStyles: { fillColor: brandRed, textColor: 255 },
+      tableWidth: 560,
     })
   }
 
