@@ -3,25 +3,20 @@ import { Link } from 'react-router-dom'
 import { Header, StatTile } from '../components/Header'
 import { useData } from '../lib/DataContext'
 import {
-  adjustedMonths,
-  adjustmentGap,
-  adjustmentGapTotal,
   computeLedgerBalance,
   debtsIncomeForMonth,
   dinnersCostForMonth,
   dinnersForMonth,
   dinnersIncomeForMonth,
   expensesForMonth,
-  feesCashForMonth,
   formatDinnerDate,
   formatEuro,
   getCurrentMonthKey,
   monthExpensesTotal,
-  monthLabel,
   monthOutflowTotal,
-  parseAmount,
-  roundCents,
   seasonMonths,
+  parseAmount,
+  feesCashForMonth,
 } from '../lib/calc'
 import { MONTH_KEYS } from '../types'
 import type { MonthKey } from '../types'
@@ -46,9 +41,6 @@ export function Expenses() {
   const debtIncome = debtsIncomeForMonth(season, month)
   const received = feesReceived + dinnerIncome + debtIncome
   const confirmedBalance = season.confirmedBalances[month]
-  const gap = adjustmentGap(season, month)
-  const gapTotal = adjustmentGapTotal(season)
-  const adjusted = adjustedMonths(season)
   const ledgerBalance = useMemo(() => computeLedgerBalance(season, month), [season, month])
   const monthName = months.find((m) => m.key === month)!
 
@@ -84,46 +76,6 @@ export function Expenses() {
             {confirmedBalance != null ? ' · com ajuste manual neste mês' : ''}.
           </p>
         </div>
-
-        {gap != null && gap !== 0 && (
-          <section className="card p-4 ring-1 ring-warn/40">
-            <h2 className="section-title mb-2">Este mês não bate</h2>
-            <p className="text-[13px] leading-relaxed text-muted">
-              O saldo transitado deste mês está escrito à mão:{' '}
-              <span className="font-semibold text-ink">{formatEuro(confirmedBalance!)}</span>. As
-              contas da app, a partir do que está registado, davam{' '}
-              <span className="font-semibold text-ink">
-                {formatEuro(roundCents(confirmedBalance! - gap))}
-              </span>
-              .
-            </p>
-            <p className="mt-2 text-[15px] font-bold">
-              Diferença: <span className={gap > 0 ? 'text-ok' : 'text-danger'}>{formatEuro(gap)}</span>
-            </p>
-            <p className="mt-2 text-[12px] leading-relaxed text-subtle">
-              {gap > 0
-                ? 'Havia mais dinheiro em caixa do que o registado: falta aqui uma entrada — alguém que pagou e não ficou marcado, ou dinheiro que entrou por outra via.'
-                : 'Havia menos dinheiro em caixa do que o registado: falta aqui uma saída — uma despesa que nunca foi lançada.'}{' '}
-              O ajuste manual tapa esta diferença, por isso o saldo final parece certo. Até
-              encontrares o que falta, o mês fica assim.
-            </p>
-          </section>
-        )}
-
-        {gapTotal !== 0 && (
-          <section className="card-flat p-4">
-            <p className="text-[12px] leading-relaxed text-muted">
-              Nesta época há {adjusted.length}{' '}
-              {adjusted.length === 1 ? 'mês com saldo escrito' : 'meses com saldo escrito'} à mão (
-              {adjusted.map((k) => monthLabel(season, k)).join(', ')}). Somadas, as diferenças que
-              esses ajustes tapam dão{' '}
-              <span className={`font-bold ${gapTotal > 0 ? 'text-ok' : 'text-danger'}`}>
-                {formatEuro(gapTotal)}
-              </span>
-              . Percorre os meses para ver onde está cada uma.
-            </p>
-          </section>
-        )}
 
         <div className="grid grid-cols-2 gap-3">
           <StatTile
