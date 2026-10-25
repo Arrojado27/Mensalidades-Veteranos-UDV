@@ -267,30 +267,70 @@ export function isMonthElapsed(season: SeasonData, month: MonthKey, today: Date 
 }
 
 /**
- * Meses por pagar de uma época, prontos a transportar para a época seguinte.
- * Sem registo = por pagar; meses que ainda não chegaram ficam de fora.
+ * O que uma época deixa por cobrar, pronto a transportar para a seguinte:
+ * mensalidades por pagar, a parte que falta de mensalidades pagas a meio, e
+ * jantares em que alguém do grupo não entregou o dinheiro. Meses que ainda não
+ * chegaram ficam de fora.
  */
 export function buildCarriedDebts(season: SeasonData, today: Date = new Date()): CarriedDebt[] {
   const debts: CarriedDebt[] = []
+  const push = (
+    playerId: string,
+    playerName: string,
+    month: MonthKey,
+    label: string,
+    amount: number,
+  ) => {
+    debtIdCounter += 1
+    debts.push({
+      id: `debt-${debtIdCounter}`,
+      playerId,
+      playerName,
+      fromSeasonId: season.id,
+      fromSeasonLabel: season.label,
+      month,
+      monthLabel: label,
+      amount,
+    })
+  }
+
   for (const player of season.players) {
     if (!player.active) continue
     for (const key of MONTH_KEYS) {
-      const entry = player.payments[key]
-      if (entry && entry.status !== 'pending') continue
       if (!isMonthElapsed(season, key, today)) continue
-      debtIdCounter += 1
-      debts.push({
-        id: `debt-${debtIdCounter}`,
-        playerId: player.id,
-        playerName: player.name,
-        fromSeasonId: season.id,
-        fromSeasonLabel: season.label,
-        month: key,
-        monthLabel: monthLabel(season, key),
-        amount: season.monthlyFee,
-      })
+      const entry = player.payments[key]
+      if (entry?.status === 'exempt') continue
+      if (!entry || entry.status === 'pending') {
+        push(player.id, player.name, key, monthLabel(season, key), season.monthlyFee)
+        continue
+      }
+      // Pago a meio: o mês conta como pago, mas o que falta continua em dívida.
+      const missing = roundCents(
+        season.monthlyFee - amountForEntry(entry.status, entry.amount, season.monthlyFee),
+      )
+      if (missing > 0) {
+        push(player.id, player.name, key, `${monthLabel(season, key)} (parte)`, missing)
+      }
     }
   }
+
+  // Jantares: o dinheiro é entregue no próprio dia, por isso quem ficou por
+  // pagar deve mesmo esse valor — e sem isto ficava preso ao jantar e perdia-se
+  // quando a época fechasse.
+  for (const dinner of season.dinners) {
+    const month = monthKeyForDate(season, dinner.date)
+    if (!isMonthElapsed(season, month, today)) continue
+    for (const attendee of dinner.attendees) {
+      if (attendee.paid || !attendee.playerId) continue
+      const player = season.players.find((p) => p.id === attendee.playerId)
+      if (!player?.active) continue
+      const label = `Jantar ${formatDinnerDate(dinner.date)}${
+        dinner.opponent ? ` · ${dinner.opponent}` : ''
+      }`
+      push(attendee.playerId, player.name, month, label, attendeeFee(dinner, attendee))
+    }
+  }
+
   return debts
 }
 
@@ -374,6 +414,43 @@ export function computeLedgerBalance(season: SeasonData, uptoMonth: MonthKey): n
     if (key === uptoMonth) break
   }
   return balance
+}
+
+/**
+ * Diferença entre o saldo transitado que foi escrito à mão num mês e o que as
+ * contas da app dão para esse momento. Devolve null quando o mês não tem ajuste.
+ *
+ * Um ajuste substitui tudo o que vem antes dele, por isso um saldo escrito à mão
+ * nunca entra em conflito com a app — mas também nunca a confirma. Este número é
+ * o conflito que ficava escondido: positivo quer dizer que havia mais dinheiro
+ * em caixa do que o que está registado, negativo que havia menos.
+ */
+export function adjustmentGap(season: SeasonData, month: MonthKey): number | null {
+  const anchor = season.confirmedBalances[month]
+  if (anchor === undefined) return null
+  let balance = season.openingBalance
+  for (const key of MONTH_KEYS) {
+    // Ao chegar ao mês pedido, `balance` é o fecho calculado do mês anterior.
+    if (key === month) return roundCents(anchor - balance)
+    balance = roundCents(
+      (season.confirmedBalances[key] ?? balance) +
+        monthIncomeTotal(season, key) -
+        monthOutflowTotal(season, key),
+    )
+  }
+  return null
+}
+
+/** Soma dos furos de todos os meses ajustados à mão da época. */
+export function adjustmentGapTotal(season: SeasonData): number {
+  let total = 0
+  for (const key of MONTH_KEYS) total += adjustmentGap(season, key) ?? 0
+  return roundCents(total)
+}
+
+/** Quantos meses da época têm o saldo transitado escrito à mão. */
+export function adjustedMonths(season: SeasonData): MonthKey[] {
+  return MONTH_KEYS.filter((key) => season.confirmedBalances[key] !== undefined)
 }
 
 /** Saldo final da época (último mês). */
