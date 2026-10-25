@@ -3,14 +3,26 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// Identifica o build, para se poder ver na app qual a versao que la esta.
+const buildStamp = `${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC · ${(
+  process.env.GITHUB_SHA ?? 'local'
+).slice(0, 7)}`
+
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
+  define: {
+    __BUILD_ID__: JSON.stringify(buildStamp),
+  },
   plugins: [
     react(),
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // O registo e feito em src/lib/updates.ts. O script que o plugin injeta
+      // por omissao registava o service worker mas nunca recarregava a pagina
+      // nem voltava a procurar versao nova depois do primeiro arranque.
+      injectRegister: null,
       includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Mensalidades Veteranos U.D.V.',

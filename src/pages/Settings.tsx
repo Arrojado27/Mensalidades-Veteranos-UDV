@@ -19,6 +19,7 @@ import { exportBackup, importBackup, resetData, startYearFromLabel } from '../li
 import { THEME_OPTIONS, applyTheme, loadThemePreference, saveThemePreference } from '../lib/theme'
 import type { ThemePreference } from '../lib/theme'
 import type { CloudVersion } from '../lib/cloud'
+import { buildId, checkForUpdate } from '../lib/updates'
 import { MONTH_KEYS } from '../types'
 import type { AdvancePayment } from '../lib/calc'
 import type { AppData, MonthKey } from '../types'
@@ -90,6 +91,8 @@ export function Settings() {
       })
   }
 
+  const [updateMsg, setUpdateMsg] = useState<string | null>(null)
+  const [checking, setChecking] = useState(false)
   const [fixingAdvance, setFixingAdvance] = useState<AdvancePayment | null>(null)
   const [advanceMonth, setAdvanceMonth] = useState<MonthKey>(MONTH_KEYS[0])
 
@@ -493,6 +496,39 @@ export function Settings() {
           <button onClick={() => setConfirmReset(true)} className="btn btn-danger w-full">
             Repor dados de origem
           </button>
+        </section>
+
+        <section className="card card-glass p-4">
+          <h2 className="section-title mb-2">Versão da app</h2>
+          <p className="text-[13px] text-muted">
+            Build <span className="font-semibold text-ink">{buildId}</span>
+          </p>
+          <p className="mt-1 text-[12px] leading-relaxed text-subtle">
+            Compara com o que te digo quando publico: se for igual, estás na versão nova. A app
+            procura sozinha de cada vez que a abres.
+          </p>
+          <button
+            disabled={checking}
+            onClick={() => {
+              setChecking(true)
+              setUpdateMsg(null)
+              void checkForUpdate()
+                .then((r) =>
+                  setUpdateMsg(
+                    r === 'a-instalar'
+                      ? 'Versão nova encontrada. A app vai recarregar sozinha daqui a uns segundos.'
+                      : r === 'atual'
+                        ? 'Já estás na versão mais recente.'
+                        : 'Não foi possível verificar. Vê se tens internet.',
+                  ),
+                )
+                .finally(() => setChecking(false))
+            }}
+            className="btn btn-soft mt-3 w-full disabled:opacity-50"
+          >
+            {checking ? 'A procurar...' : 'Procurar atualização'}
+          </button>
+          {updateMsg && <p className="mt-2 text-[12px] text-muted">{updateMsg}</p>}
         </section>
 
         <p className="pb-2 text-center text-[11px] text-subtle">
