@@ -382,15 +382,37 @@ export function seasonFinalBalance(season: SeasonData): number {
 }
 
 /**
- * Lê um valor em euros escrito à mão, aceitando vírgula decimal (4072,73) e
- * separador de milhares (4.072,73), como se escreve em Portugal.
+ * Lê um valor em euros escrito à mão, como se escreve em Portugal.
  * Devolve undefined se o campo estiver vazio ou não for um número.
+ *
+ *   450        -> 450
+ *   1250       -> 1250
+ *   1.250      -> 1250      (ponto de milhares, sem casas decimais)
+ *   1.250,00   -> 1250
+ *   4.072,73   -> 4072,73
+ *   12,27      -> 12,27
+ *   1.5        -> 1,5       (ponto solto com 1 ou 2 casas vale como decimal)
+ *
+ * O caso do `1.250` é o que faltava: sem vírgula pelo meio, o ponto era lido
+ * como decimal e uma conta de 1.250 € ficava gravada como 1,25 € — mil vezes
+ * menor, sem aviso nenhum. Um grupo de exatamente três dígitos depois do ponto
+ * só pode ser separador de milhares; um grupo de um ou dois é casa decimal, que
+ * é o que sai de um teclado que só dá ponto.
  */
 export function parseAmount(input: string): number | undefined {
-  let cleaned = input.trim().replace(/[\s€]/g, '')
+  const cleaned = input.trim().replace(/[\s\u00a0€]/g, '')
   if (cleaned === '') return undefined
-  if (cleaned.includes(',')) cleaned = cleaned.replace(/\./g, '').replace(',', '.')
-  const value = Number(cleaned)
+  let normalized: string
+  if (cleaned.includes(',')) {
+    // Há vírgula decimal, logo os pontos que existam são de milhares.
+    normalized = cleaned.replace(/\./g, '').replace(',', '.')
+  } else if (/^-?[1-9]\d{0,2}(\.\d{3})+$/.test(cleaned)) {
+    // Só pontos, em grupos de três: 1.250 e 1.250.500 são milhares.
+    normalized = cleaned.replace(/\./g, '')
+  } else {
+    normalized = cleaned
+  }
+  const value = Number(normalized)
   return Number.isFinite(value) ? value : undefined
 }
 

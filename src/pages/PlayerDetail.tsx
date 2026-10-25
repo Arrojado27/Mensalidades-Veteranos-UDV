@@ -14,7 +14,7 @@ import {
   seasonMonths,
 } from '../lib/calc'
 import { MONTH_KEYS, PAYMENT_METHODS } from '../types'
-import type { MonthKey, PaymentMethod } from '../types'
+import type { MonthKey, PaymentEntry, PaymentMethod } from '../types'
 
 export function PlayerDetail() {
   const { playerId } = useParams()
@@ -30,6 +30,15 @@ export function PlayerDetail() {
 
   const months = useMemo(() => seasonMonths(season), [season])
   const player = season.players.find((p) => p.id === playerId)
+
+  /**
+   * O total do lote conta o valor já registado em cada mês, não a mensalidade
+   * vezes o número de meses: um mês gravado com valor diferente mantém-no.
+   */
+  const bulkTotal = bulkMonths.reduce((sum, key) => {
+    const entry = player?.payments[key]
+    return sum + (entry?.status === 'paid' && entry.amount != null ? entry.amount : season.monthlyFee)
+  }, 0)
 
   const dinners = useMemo(() => {
     if (!player) return []
@@ -224,13 +233,20 @@ export function PlayerDetail() {
                 disabled={bulkMonths.length === 0}
                 onClick={() => {
                   for (const key of bulkMonths) {
-                    setPayment(player.id, key, {
+                    // Parte do que já está gravado, em vez de escrever por cima:
+                    // um mês pago com valor diferente da mensalidade (parcial,
+                    // ou com extra) mantinha-se a perder o valor e voltava à
+                    // mensalidade cheia, inventando ou apagando dinheiro.
+                    const next: PaymentEntry = {
+                      ...player.payments[key],
                       status: 'paid',
                       method: bulkMethod,
-                      // O dinheiro entrou todo de uma vez: só o mês da própria
-                      // mensalidade dispensa a marca.
-                      ...(bulkReceivedIn !== key ? { receivedIn: bulkReceivedIn } : {}),
-                    })
+                    }
+                    // O dinheiro entrou todo de uma vez: só o mês da própria
+                    // mensalidade dispensa a marca.
+                    if (bulkReceivedIn === key) delete next.receivedIn
+                    else next.receivedIn = bulkReceivedIn
+                    setPayment(player.id, key, next)
                   }
                   setShowBulk(false)
                 }}
@@ -240,7 +256,7 @@ export function PlayerDetail() {
                   ? 'Escolhe os meses'
                   : `Registar ${bulkMonths.length} ${
                       bulkMonths.length === 1 ? 'mês' : 'meses'
-                    } · ${formatEuro(bulkMonths.length * season.monthlyFee)}`}
+                    } · ${formatEuro(bulkTotal)}`}
               </button>
             </>
           }
@@ -248,7 +264,9 @@ export function PlayerDetail() {
           <span className="label">Meses pagos</span>
           <ul className="mb-4 flex flex-col gap-1.5">
             {months.map((m) => {
-              const already = player.payments[m.key]?.status === 'paid'
+              const entry = player.payments[m.key]
+              const already = entry?.status === 'paid'
+              const custom = already && entry.amount != null && entry.amount !== season.monthlyFee
               const chosen = bulkMonths.includes(m.key)
               return (
                 <li key={m.key}>
@@ -266,7 +284,15 @@ export function PlayerDetail() {
                       {m.label} {m.year}
                     </span>
                     <span className={`text-[11px] ${chosen ? 'text-ok' : 'text-subtle'}`}>
-                      {chosen ? 'a registar' : already ? 'já pago — volta a gravar' : 'por pagar'}
+                      {chosen
+                        ? custom
+                          ? `a registar · mantém ${formatEuro(entry.amount!)}`
+                          : 'a registar'
+                        : already
+                          ? custom
+                            ? `já pago · ${formatEuro(entry.amount!)}`
+                            : 'já pago'
+                          : 'por pagar'}
                     </span>
                   </button>
                 </li>
