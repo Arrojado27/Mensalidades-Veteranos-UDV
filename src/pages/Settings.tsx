@@ -4,18 +4,24 @@ import { Header } from '../components/Header'
 import { ConfirmDialog, Sheet } from '../components/Sheet'
 import { useData } from '../lib/DataContext'
 import {
+  advancePayments,
   amountToInput,
   buildCarriedDebts,
   formatEuro,
+  getCurrentMonthKey,
+  monthLabel,
   openDebts,
   parseAmount,
   seasonFinalBalance,
+  seasonMonths,
 } from '../lib/calc'
 import { exportBackup, importBackup, resetData, startYearFromLabel } from '../lib/storage'
 import { THEME_OPTIONS, applyTheme, loadThemePreference, saveThemePreference } from '../lib/theme'
 import type { ThemePreference } from '../lib/theme'
 import type { CloudVersion } from '../lib/cloud'
-import type { AppData } from '../types'
+import { MONTH_KEYS } from '../types'
+import type { AdvancePayment } from '../lib/calc'
+import type { AppData, MonthKey } from '../types'
 
 /** O suficiente para se reconhecer uma cópia sem a abrir. */
 function versionSummary(snapshot: AppData) {
@@ -34,8 +40,17 @@ function nextSeasonLabel(startYear: number) {
 }
 
 export function Settings() {
-  const { data, season, setData, setMonthlyFee, setDinnerFees, createSeason, cloud, cloudActions } =
-    useData()
+  const {
+    data,
+    season,
+    setData,
+    setPayment,
+    setMonthlyFee,
+    setDinnerFees,
+    createSeason,
+    cloud,
+    cloudActions,
+  } = useData()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [feeInput, setFeeInput] = useState(amountToInput(season.monthlyFee))
   const [playerFeeInput, setPlayerFeeInput] = useState(amountToInput(season.dinnerPlayerFee))
@@ -74,6 +89,13 @@ export function Settings() {
         )
       })
   }
+
+  const [fixingAdvance, setFixingAdvance] = useState<AdvancePayment | null>(null)
+  const [advanceMonth, setAdvanceMonth] = useState<MonthKey>(MONTH_KEYS[0])
+
+  const seasonMonthList = useMemo(() => seasonMonths(season), [season])
+  const advance = useMemo(() => advancePayments(season), [season])
+  const advanceTotal = advance.reduce((sum, a) => sum + a.total, 0)
 
   const pendingDebts = useMemo(() => buildCarriedDebts(season), [season])
   const pendingTotal = pendingDebts.reduce((sum, d) => sum + d.amount, 0)
@@ -237,6 +259,40 @@ export function Settings() {
             Abrir atrasados
           </Link>
         </section>
+
+        {advance.length > 0 && (
+          <section className="card card-glass p-4">
+            <h2 className="section-title mb-2">Pagamentos adiantados</h2>
+            <p className="mb-3 text-[13px] leading-relaxed text-muted">
+              {advance.length} jogador{advance.length === 1 ? '' : 'es'} com meses pagos que ainda
+              não chegaram, {formatEuro(advanceTotal)} no total. Esse dinheiro está a contar no
+              saldo dos meses futuros, não no mês em que o recebeste. Diz em que mês entrou na
+              caixa e o saldo passa a bater com o dinheiro que tens à mão.
+            </p>
+            <ul className="divide-y divide-line">
+              {advance.map((a) => (
+                <li key={a.playerId} className="flex items-center gap-3 py-2.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-semibold">{a.playerName}</p>
+                    <p className="text-[12px] text-muted">
+                      {a.months.map((m) => monthLabel(season, m)).join(', ')}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-[14px] font-semibold">{formatEuro(a.total)}</span>
+                  <button
+                    onClick={() => {
+                      setAdvanceMonth(getCurrentMonthKey(season) ?? MONTH_KEYS[0])
+                      setFixingAdvance(a)
+                    }}
+                    className="btn btn-soft shrink-0 px-3 py-1.5 text-[12px]"
+                  >
+                    Corrigir
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section className="card card-glass p-4">
           <h2 className="section-title mb-3">Aspeto</h2>
@@ -600,6 +656,57 @@ export function Settings() {
             setShowVersions(false)
           }}
         />
+      )}
+
+      {fixingAdvance && (
+        <Sheet
+          title="Quando é que este dinheiro entrou?"
+          subtitle={`${fixingAdvance.playerName} · ${fixingAdvance.months
+            .map((m) => monthLabel(season, m))
+            .join(', ')} · ${formatEuro(fixingAdvance.total)}`}
+          onClose={() => setFixingAdvance(null)}
+          scroll
+          footer={
+            <>
+              <button onClick={() => setFixingAdvance(null)} className="btn btn-soft flex-1">
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  for (const key of fixingAdvance.months) {
+                    const entry = season.players.find((p) => p.id === fixingAdvance.playerId)
+                      ?.payments[key]
+                    if (!entry) continue
+                    setPayment(fixingAdvance.playerId, key, { ...entry, receivedIn: advanceMonth })
+                  }
+                  setFixingAdvance(null)
+                }}
+                className="btn btn-primary flex-1"
+              >
+                Guardar
+              </button>
+            </>
+          }
+        >
+          <label className="block">
+            <span className="label">Mês em que entrou na caixa</span>
+            <select
+              value={advanceMonth}
+              onChange={(e) => setAdvanceMonth(e.target.value as MonthKey)}
+              className="field"
+            >
+              {seasonMonthList.map((m) => (
+                <option key={m.key} value={m.key}>
+                  {m.label} {m.year}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="mt-3 text-[12px] leading-relaxed text-subtle">
+            As mensalidades continuam a ser dos meses de cima — ele continua em dia nesses meses.
+            Muda só o mês em que o saldo conta o dinheiro.
+          </p>
+        </Sheet>
       )}
 
       {confirmReset && (

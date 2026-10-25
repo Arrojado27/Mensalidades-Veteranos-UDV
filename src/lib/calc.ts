@@ -98,6 +98,44 @@ export function feesCashForMonth(season: SeasonData, month: MonthKey): number {
   return total
 }
 
+export interface AdvancePayment {
+  playerId: string
+  playerName: string
+  /** Meses já pagos que ainda não chegaram, sem mês de entrada em caixa marcado. */
+  months: MonthKey[]
+  total: number
+}
+
+/**
+ * Mensalidades de meses que ainda não chegaram, já pagas, e cujo dinheiro não
+ * tem mês de entrada marcado — ou seja, está a contar no saldo de um mês futuro
+ * em vez do mês em que foi recebido. É o que fica por arrumar depois de o saldo
+ * passar a contar por caixa.
+ *
+ * Só olha para o futuro de propósito: um mês passado pago é indistinguível de
+ * um mês passado pago a horas, e a app não guarda a data em que cada registo
+ * foi feito.
+ */
+export function advancePayments(season: SeasonData, today: Date = new Date()): AdvancePayment[] {
+  const current = getCurrentMonthKey(season, today)
+  const out: AdvancePayment[] = []
+  for (const player of season.players) {
+    const months: MonthKey[] = []
+    let total = 0
+    for (const key of MONTH_KEYS) {
+      if (key === current) continue
+      if (isMonthElapsed(season, key, today)) continue
+      const entry = player.payments[key]
+      if (entry?.status !== 'paid') continue
+      if (entry.receivedIn) continue
+      months.push(key)
+      total += amountForEntry(entry.status, entry.amount, season.monthlyFee)
+    }
+    if (months.length > 0) out.push({ playerId: player.id, playerName: player.name, months, total })
+  }
+  return out.sort((a, b) => a.playerName.localeCompare(b.playerName, 'pt'))
+}
+
 export interface MonthSummary {
   month: MonthKey
   paid: Player[]
