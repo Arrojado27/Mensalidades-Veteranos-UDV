@@ -16,7 +16,7 @@ import {
   monthOutflowTotal,
   seasonMonths,
   parseAmount,
-  summarizeMonth,
+  feesCashForMonth,
 } from '../lib/calc'
 import { MONTH_KEYS } from '../types'
 import type { MonthKey } from '../types'
@@ -36,7 +36,7 @@ export function Expenses() {
   const expensesTotal = monthExpensesTotal(season, month)
   const dinnerCost = dinnersCostForMonth(season, month)
   const outflow = monthOutflowTotal(season, month)
-  const feesReceived = summarizeMonth(season, month).totalReceived
+  const feesReceived = feesCashForMonth(season, month)
   const dinnerIncome = dinnersIncomeForMonth(season, month)
   const debtIncome = debtsIncomeForMonth(season, month)
   const received = feesReceived + dinnerIncome + debtIncome

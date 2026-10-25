@@ -13,6 +13,7 @@ import {
   mostUsedMethod,
   openDebts,
   openDebtsTotal,
+  seasonMonths,
   seasonTotals,
   sortedDinners,
   summarizeDinner,
@@ -28,6 +29,7 @@ export function Dashboard() {
   const currentMonthKey = getCurrentMonthKey(season)
   const referenceMonth = currentMonthKey ?? MONTH_KEYS[MONTH_KEYS.length - 1]
   const referenceInfo = monthInfo(season, referenceMonth)
+  const months = useMemo(() => seasonMonths(season), [season])
   const summary = useMemo(() => summarizeMonth(season, referenceMonth), [season, referenceMonth])
   // Por ordem alfabética: é assim que se percorre o grupo a cobrar.
   const pending = useMemo(
@@ -233,6 +235,8 @@ export function Dashboard() {
         <PaymentEditorModal
           playerName={editing.player.name}
           monthLabel={`${referenceInfo.label} ${referenceInfo.year}`}
+          month={editing.month}
+          months={months}
           fee={season.monthlyFee}
           entry={editing.player.payments[editing.month]}
           onClose={() => setEditing(null)}

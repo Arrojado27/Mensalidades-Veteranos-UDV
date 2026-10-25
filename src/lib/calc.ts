@@ -75,6 +75,29 @@ export function mostUsedMethod(player: Player, fallback: PaymentMethod = 'cash')
   return best ?? fallback
 }
 
+/**
+ * Mensalidades que entraram na caixa num mês — dinheiro real, não competência.
+ * Uma mensalidade conta no mês em que foi recebida (`receivedIn`); sem esse
+ * campo, conta no mês a que diz respeito, que é como era antes de o campo
+ * existir e o que mantém os saldos antigos inalterados.
+ *
+ * Ao contrário do summarizeMonth, não salta quem já não está no grupo: para
+ * saber quanto está na caixa, o dinheiro de quem saiu conta como qualquer
+ * outro.
+ */
+export function feesCashForMonth(season: SeasonData, month: MonthKey): number {
+  let total = 0
+  for (const player of season.players) {
+    for (const key of MONTH_KEYS) {
+      const entry = player.payments[key]
+      if (entry?.status !== 'paid') continue
+      if ((entry.receivedIn ?? key) !== month) continue
+      total += amountForEntry(entry.status, entry.amount, season.monthlyFee)
+    }
+  }
+  return total
+}
+
 export interface MonthSummary {
   month: MonthKey
   paid: Player[]
@@ -266,7 +289,7 @@ export function monthExpensesTotal(season: SeasonData, month: MonthKey) {
 /** Tudo o que entrou em caixa num mês: mensalidades + jantares + dívidas antigas. */
 export function monthIncomeTotal(season: SeasonData, month: MonthKey): number {
   return (
-    summarizeMonth(season, month).totalReceived +
+    feesCashForMonth(season, month) +
     dinnersIncomeForMonth(season, month) +
     debtsIncomeForMonth(season, month)
   )

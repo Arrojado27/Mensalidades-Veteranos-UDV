@@ -75,6 +75,13 @@ export interface PaymentEntry {
   method?: PaymentMethod
   /** Valor efetivamente pago, só quando difere da mensalidade padrão da época. */
   amount?: number
+  /**
+   * Mês em que o dinheiro entrou na caixa, quando não é o mês a que a
+   * mensalidade diz respeito — quem paga quatro meses de uma vez em setembro
+   * entrega o dinheiro todo em setembro. Só é gravado quando difere, para que
+   * os registos antigos continuem a contar no próprio mês, como sempre.
+   */
+  receivedIn?: MonthKey
   note?: string
 }
 

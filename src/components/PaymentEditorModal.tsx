@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Sheet } from './Sheet'
 import { amountToInput, parseAmount } from '../lib/calc'
 import { PAYMENT_METHODS } from '../types'
-import type { PaymentEntry, PaymentMethod, PaymentStatus } from '../types'
+import type { MonthInfo, MonthKey, PaymentEntry, PaymentMethod, PaymentStatus } from '../types'
 
 const STATUS_OPTIONS: [PaymentStatus, string][] = [
   ['paid', 'Pago'],
@@ -18,6 +18,8 @@ const METHOD_ACTIVE_CLASSES: Record<PaymentMethod, string> = {
 export function PaymentEditorModal({
   playerName,
   monthLabel,
+  month,
+  months,
   fee,
   entry,
   onSave,
@@ -25,6 +27,9 @@ export function PaymentEditorModal({
 }: {
   playerName: string
   monthLabel: string
+  /** O mês da mensalidade que está a ser registada. */
+  month: MonthKey
+  months: MonthInfo[]
   fee: number
   entry: PaymentEntry | undefined
   onSave: (entry: PaymentEntry) => void
@@ -38,12 +43,23 @@ export function PaymentEditorModal({
   const [method, setMethod] = useState<PaymentMethod>(entry?.method ?? 'transfer')
   const [amount, setAmount] = useState<string>(amountToInput(entry?.amount))
   const [note, setNote] = useState(entry?.note ?? '')
+  // Por omissão o dinheiro entra no mês da própria mensalidade, que é o caso
+  // normal. Muda-se quando alguém paga vários meses de uma vez.
+  const [receivedIn, setReceivedIn] = useState<MonthKey>(entry?.receivedIn ?? month)
 
   function handleSave() {
     const parsedAmount = parseAmount(amount)
     const next: PaymentEntry = {
       status,
-      ...(status === 'paid' ? { method, amount: parsedAmount } : {}),
+      ...(status === 'paid'
+        ? {
+            method,
+            amount: parsedAmount,
+            // Só se grava quando difere: assim os registos antigos ficam como
+            // estavam e os saldos já fechados não se mexem.
+            ...(receivedIn !== month ? { receivedIn } : {}),
+          }
+        : {}),
       ...(note.trim() ? { note: note.trim() } : {}),
     }
     onSave(next)
@@ -113,6 +129,27 @@ export function PaymentEditorModal({
               onChange={(e) => setAmount(e.target.value)}
               className="field"
             />
+          </label>
+          <label className="block">
+            <span className="label">Mês em que entrou na caixa</span>
+            <select
+              value={receivedIn}
+              onChange={(e) => setReceivedIn(e.target.value as MonthKey)}
+              className="field"
+            >
+              {months.map((m) => (
+                <option key={m.key} value={m.key}>
+                  {m.label} {m.year}
+                  {m.key === month ? ' (o próprio mês)' : ''}
+                </option>
+              ))}
+            </select>
+            {receivedIn !== month && (
+              <span className="mt-1 block text-[11px] text-subtle">
+                A mensalidade continua a ser de {monthLabel}; só o saldo em caixa conta este
+                dinheiro no mês escolhido.
+              </span>
+            )}
           </label>
         </div>
       )}

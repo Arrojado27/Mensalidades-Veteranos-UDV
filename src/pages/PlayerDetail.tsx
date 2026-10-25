@@ -5,8 +5,16 @@ import { MonthChip } from '../components/MonthChip'
 import { PaymentEditorModal } from '../components/PaymentEditorModal'
 import { ConfirmDialog, Sheet } from '../components/Sheet'
 import { useData } from '../lib/DataContext'
-import { amountForEntry, attendeeFee, formatDinnerDate, formatEuro, seasonMonths } from '../lib/calc'
-import type { MonthKey } from '../types'
+import {
+  amountForEntry,
+  attendeeFee,
+  formatDinnerDate,
+  formatEuro,
+  getCurrentMonthKey,
+  seasonMonths,
+} from '../lib/calc'
+import { MONTH_KEYS, PAYMENT_METHODS } from '../types'
+import type { MonthKey, PaymentMethod } from '../types'
 
 export function PlayerDetail() {
   const { playerId } = useParams()
@@ -15,6 +23,10 @@ export function PlayerDetail() {
   const [editingMonth, setEditingMonth] = useState<MonthKey | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [showJoinMonth, setShowJoinMonth] = useState(false)
+  const [showBulk, setShowBulk] = useState(false)
+  const [bulkMonths, setBulkMonths] = useState<MonthKey[]>([])
+  const [bulkMethod, setBulkMethod] = useState<PaymentMethod>('cash')
+  const [bulkReceivedIn, setBulkReceivedIn] = useState<MonthKey>(MONTH_KEYS[0])
 
   const months = useMemo(() => seasonMonths(season), [season])
   const player = season.players.find((p) => p.id === playerId)
@@ -73,9 +85,22 @@ export function PlayerDetail() {
           />
         </label>
 
-        <button onClick={() => setShowJoinMonth(true)} className="btn btn-soft w-full">
-          Entrou a meio da época
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setBulkMonths([])
+              setBulkMethod('cash')
+              setBulkReceivedIn(getCurrentMonthKey(season) ?? MONTH_KEYS[0])
+              setShowBulk(true)
+            }}
+            className="btn btn-primary flex-1"
+          >
+            Recebi vários meses
+          </button>
+          <button onClick={() => setShowJoinMonth(true)} className="btn btn-soft flex-1">
+            Entrou a meio
+          </button>
+        </div>
 
         <section className="card card-glass overflow-hidden">
           <h2 className="section-title px-4 pt-4">Mensalidades</h2>
@@ -184,10 +209,115 @@ export function PlayerDetail() {
         </Sheet>
       )}
 
+      {showBulk && (
+        <Sheet
+          title="Recebi vários meses"
+          subtitle={`${player.name} · escolhe os meses que ele pagou agora`}
+          onClose={() => setShowBulk(false)}
+          scroll
+          footer={
+            <>
+              <button onClick={() => setShowBulk(false)} className="btn btn-soft flex-1">
+                Cancelar
+              </button>
+              <button
+                disabled={bulkMonths.length === 0}
+                onClick={() => {
+                  for (const key of bulkMonths) {
+                    setPayment(player.id, key, {
+                      status: 'paid',
+                      method: bulkMethod,
+                      // O dinheiro entrou todo de uma vez: só o mês da própria
+                      // mensalidade dispensa a marca.
+                      ...(bulkReceivedIn !== key ? { receivedIn: bulkReceivedIn } : {}),
+                    })
+                  }
+                  setShowBulk(false)
+                }}
+                className="btn btn-primary flex-1 disabled:opacity-50"
+              >
+                {bulkMonths.length === 0
+                  ? 'Escolhe os meses'
+                  : `Registar ${bulkMonths.length} ${
+                      bulkMonths.length === 1 ? 'mês' : 'meses'
+                    } · ${formatEuro(bulkMonths.length * season.monthlyFee)}`}
+              </button>
+            </>
+          }
+        >
+          <span className="label">Meses pagos</span>
+          <ul className="mb-4 flex flex-col gap-1.5">
+            {months.map((m) => {
+              const already = player.payments[m.key]?.status === 'paid'
+              const chosen = bulkMonths.includes(m.key)
+              return (
+                <li key={m.key}>
+                  <button
+                    onClick={() =>
+                      setBulkMonths((prev) =>
+                        prev.includes(m.key) ? prev.filter((k) => k !== m.key) : [...prev, m.key],
+                      )
+                    }
+                    className={`flex w-full items-center justify-between rounded-2xl px-3.5 py-3 text-left ${
+                      chosen ? 'bg-ok-soft ring-1 ring-ok/45' : 'bg-ink/[0.03]'
+                    }`}
+                  >
+                    <span className="text-[14px] font-semibold">
+                      {m.label} {m.year}
+                    </span>
+                    <span className={`text-[11px] ${chosen ? 'text-ok' : 'text-subtle'}`}>
+                      {chosen ? 'a registar' : already ? 'já pago — volta a gravar' : 'por pagar'}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+
+          <div className="mb-4">
+            <span className="label">Como pagou</span>
+            <div className="grid grid-cols-2 gap-2">
+              {PAYMENT_METHODS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setBulkMethod(key)}
+                  className={`btn px-1 text-[12px] ${
+                    bulkMethod === key ? 'btn-primary' : 'btn-soft text-muted'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <label className="block">
+            <span className="label">Mês em que entrou na caixa</span>
+            <select
+              value={bulkReceivedIn}
+              onChange={(e) => setBulkReceivedIn(e.target.value as MonthKey)}
+              className="field"
+            >
+              {months.map((m) => (
+                <option key={m.key} value={m.key}>
+                  {m.label} {m.year}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-[11px] leading-relaxed text-subtle">
+              As mensalidades continuam a ser dos meses que escolheste acima. O saldo em caixa
+              conta o dinheiro todo neste mês, que é quando ele te chegou à mão.
+            </span>
+          </label>
+        </Sheet>
+      )}
+
       {editingMonth && (
         <PaymentEditorModal
           playerName={player.name}
           monthLabel={`${months.find((m) => m.key === editingMonth)?.label} ${months.find((m) => m.key === editingMonth)?.year}`}
+          month={editingMonth}
+          months={months}
           fee={season.monthlyFee}
           entry={player.payments[editingMonth]}
           onClose={() => setEditingMonth(null)}

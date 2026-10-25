@@ -8,6 +8,7 @@ import {
   debtsIncomeForMonth,
   dinnersCostForMonth,
   dinnersIncomeForMonth,
+  feesCashForMonth,
   formatDinnerDate,
   formatEuro,
   monthExpensesTotal,
@@ -16,7 +17,6 @@ import {
   seasonMonths,
   sortedDinners,
   summarizeDinner,
-  summarizeMonth,
 } from './calc'
 import { ATTENDEE_LABELS, MONTH_KEYS, methodLabel, methodShort } from '../types'
 import type { MonthKey, SeasonData } from '../types'
@@ -202,7 +202,7 @@ export function exportSeasonToExcel(season: SeasonData, seasons: SeasonData[] = 
 
   const saldoRows = months.map((m) => ({
     Mês: `${m.label} ${m.year}`,
-    'Mensalidades (€)': summarizeMonth(season, m.key).totalReceived,
+    'Mensalidades (€)': feesCashForMonth(season, m.key),
     'Jantares recebidos (€)': dinnersIncomeForMonth(season, m.key),
     'Atrasados cobrados (€)': debtsIncomeForMonth(season, m.key),
     'Despesas (€)': monthExpensesTotal(season, m.key),
@@ -411,7 +411,7 @@ export function exportSeasonToPDF(season: SeasonData, seasons: SeasonData[] = [s
   const saldoBody = months.map((m) => [
     `${m.label} ${m.year}`,
     formatEuro(
-      summarizeMonth(season, m.key).totalReceived +
+      feesCashForMonth(season, m.key) +
         dinnersIncomeForMonth(season, m.key) +
         debtsIncomeForMonth(season, m.key),
     ),
