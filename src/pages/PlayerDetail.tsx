@@ -7,6 +7,7 @@ import { ConfirmDialog, Sheet } from '../components/Sheet'
 import { useData } from '../lib/DataContext'
 import {
   amountForEntry,
+  cashForEntry,
   attendeeFee,
   formatDinnerDate,
   formatEuro,
@@ -37,6 +38,7 @@ export function PlayerDetail() {
    */
   const bulkTotal = bulkMonths.reduce((sum, key) => {
     const entry = player?.payments[key]
+    if (entry?.status === 'paid' && entry.counted) return sum
     return sum + (entry?.status === 'paid' && entry.amount != null ? entry.amount : season.monthlyFee)
   }, 0)
 
@@ -61,7 +63,7 @@ export function PlayerDetail() {
 
   const totalPaid = months.reduce((sum, m) => {
     const entry = player.payments[m.key]
-    return sum + amountForEntry(entry?.status ?? 'pending', entry?.amount, season.monthlyFee)
+    return sum + cashForEntry(entry, season.monthlyFee)
   }, 0)
   const pendingMonths = months.filter((m) => (player.payments[m.key]?.status ?? 'pending') === 'pending')
   const dinnersOwed = dinners
@@ -128,7 +130,9 @@ export function PlayerDetail() {
                     </span>
                     <span className="block truncate text-[12px] text-muted">
                       {paid
-                        ? formatEuro(amountForEntry('paid', entry?.amount, season.monthlyFee))
+                        ? entry?.counted
+                          ? 'Pago · já contado no saldo'
+                          : formatEuro(amountForEntry('paid', entry?.amount, season.monthlyFee))
                         : entry?.status === 'exempt'
                           ? 'Isento'
                           : 'Por pagar'}

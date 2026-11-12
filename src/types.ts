@@ -82,6 +82,12 @@ export interface PaymentEntry {
    * os registos antigos continuem a contar no próprio mês, como sempre.
    */
   receivedIn?: MonthKey
+  /**
+   * O mês está pago, mas o dinheiro já estava contado no saldo (por exemplo,
+   * um adiantamento da época anterior que transitou). Fica pago no mapa, sem
+   * somar outra vez à caixa nem aos totais.
+   */
+  counted?: boolean
   note?: string
 }
 

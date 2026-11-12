@@ -3,6 +3,7 @@ import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
 import {
   amountForEntry,
+  cashForEntry,
   attendeeFee,
   computeLedgerBalance,
   debtsIncomeForMonth,
@@ -102,7 +103,7 @@ function playerTotal(season: SeasonData, playerId: string) {
   return MONTH_KEYS.reduce((sum, key) => {
     const player = season.players.find((p) => p.id === playerId)
     const entry = player?.payments[key]
-    return sum + amountForEntry(entry?.status ?? 'pending', entry?.amount, season.monthlyFee)
+    return sum + cashForEntry(entry, season.monthlyFee)
   }, 0)
 }
 

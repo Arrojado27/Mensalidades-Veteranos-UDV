@@ -53,6 +53,15 @@ export function amountForEntry(status: string, amount: number | undefined, fee: 
   return amount ?? fee
 }
 
+/** Dinheiro novo que um registo traz: 0 se o mês já estava contado no saldo. */
+export function cashForEntry(
+  entry: { status: string; amount?: number; counted?: boolean } | undefined,
+  fee: number,
+): number {
+  if (!entry || entry.counted) return 0
+  return amountForEntry(entry.status, entry.amount, fee)
+}
+
 /**
  * Forma de pagamento que o jogador mais usou nesta época — serve de sugestão
  * ao marcar um pagamento rápido, para não obrigar a escolher de cada vez.
@@ -92,7 +101,7 @@ export function feesCashForMonth(season: SeasonData, month: MonthKey): number {
       const entry = player.payments[key]
       if (entry?.status !== 'paid') continue
       if ((entry.receivedIn ?? key) !== month) continue
-      total += amountForEntry(entry.status, entry.amount, season.monthlyFee)
+      total += cashForEntry(entry, season.monthlyFee)
     }
   }
   return total
@@ -127,7 +136,7 @@ export function advancePayments(season: SeasonData, today: Date = new Date()): A
       if (isMonthElapsed(season, key, today)) continue
       const entry = player.payments[key]
       if (entry?.status !== 'paid') continue
-      if (entry.receivedIn) continue
+      if (entry.receivedIn || entry.counted) continue
       months.push(key)
       total += amountForEntry(entry.status, entry.amount, season.monthlyFee)
     }
@@ -167,7 +176,7 @@ export function summarizeMonth(season: SeasonData, month: MonthKey): MonthSummar
     totalExpected += season.monthlyFee
     if (entry?.status === 'paid') {
       paid.push(p)
-      totalReceived += amountForEntry(entry.status, entry.amount, season.monthlyFee)
+      totalReceived += cashForEntry(entry, season.monthlyFee)
     } else {
       pending.push(p)
     }
