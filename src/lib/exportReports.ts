@@ -124,7 +124,10 @@ function download(blob: Blob, filename: string) {
 }
 
 export function exportSeasonToExcel(season: SeasonData, seasons: SeasonData[] = [season]) {
-  const players = [...season.players].sort((a, b) => a.name.localeCompare(b.name, 'pt'))
+  // Quem saiu do grupo fica fora do mapa (continua na app, com o histórico).
+  const players = season.players
+    .filter((p) => p.active)
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt'))
   const months = seasonMonths(season)
   const late = latePayments(season, seasons)
 
@@ -138,7 +141,6 @@ export function exportSeasonToExcel(season: SeasonData, seasons: SeasonData[] = 
     // cobrado depois entrou na caixa de outra época e não pode ser somado aqui.
     row['Total pago na época (€)'] = playerTotal(season, p.id)
     row['Cobrado mais tarde (€)'] = lateTotal(late, p.id)
-    row['No grupo'] = p.active ? 'Sim' : 'Não'
     return row
   })
 
@@ -234,7 +236,10 @@ export function exportSeasonToExcel(season: SeasonData, seasons: SeasonData[] = 
 }
 
 export function exportSeasonToPDF(season: SeasonData, seasons: SeasonData[] = [season]) {
-  const players = [...season.players].sort((a, b) => a.name.localeCompare(b.name, 'pt'))
+  // Quem saiu do grupo fica fora do mapa (continua na app, com o histórico).
+  const players = season.players
+    .filter((p) => p.active)
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt'))
   const months = seasonMonths(season)
   const late = latePayments(season, seasons)
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
@@ -274,7 +279,7 @@ export function exportSeasonToPDF(season: SeasonData, seasons: SeasonData[] = [s
       ],
     ],
     body: players.map((p) => [
-      p.name + (p.active ? '' : ' (saiu)'),
+      p.name,
       ...months.map((m) => cellLabel(season, p.id, m.key, late)),
       playerTotal(season, p.id).toString(),
       ...(late.size > 0 ? [lateTotal(late, p.id).toString()] : []),
