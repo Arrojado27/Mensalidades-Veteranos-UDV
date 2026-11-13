@@ -43,7 +43,8 @@ export function PaymentEditorModal({
   const [method, setMethod] = useState<PaymentMethod>(entry?.method ?? 'transfer')
   const [amount, setAmount] = useState<string>(amountToInput(entry?.amount))
   const [note, setNote] = useState(entry?.note ?? '')
-  const [counted, setCounted] = useState(entry?.counted ?? false)
+  // Sem caixa no ecrã: quem já está marcado como contado no saldo mantém a marca ao guardar.
+  const counted = entry?.counted ?? false
   // Por omissão o dinheiro entra no mês da própria mensalidade, que é o caso
   // normal. Muda-se quando alguém paga vários meses de uma vez.
   const [receivedIn, setReceivedIn] = useState<MonthKey>(entry?.receivedIn ?? month)
@@ -121,21 +122,6 @@ export function PaymentEditorModal({
               ))}
             </div>
           </div>
-          <label className="flex items-start gap-2 text-[13px]">
-            <input
-              type="checkbox"
-              checked={counted}
-              onChange={(e) => setCounted(e.target.checked)}
-              className="mt-0.5"
-            />
-            <span>
-              Já contado no saldo
-              <span className="block text-[11px] text-subtle">
-                Fica pago no mapa, mas não soma outra vez à caixa (ex.: adiantamento da época
-                anterior).
-              </span>
-            </span>
-          </label>
           <label className={`block ${counted ? 'opacity-40' : ''}`}>
             <span className="label">Valor pago (mensalidade: {fee}€)</span>
             <input
