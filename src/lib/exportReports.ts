@@ -93,16 +93,25 @@ function cellLabel(
   if (entry.status === 'exempt') return '-'
   const label = methodShort(entry.method)
   const amount = amountForEntry(entry.status, entry.amount, season.monthlyFee)
-  if (entry.amount != null && entry.amount !== season.monthlyFee) {
+  // Valor 0 (mês já contado no saldo) mostra-se como um mês normal.
+  if (!entry.counted && entry.amount != null && entry.amount > 0 && entry.amount !== season.monthlyFee) {
     return `${label} (${amount}€)`
   }
   return label
 }
 
+/**
+ * Total mostrado no mapa. Os meses já contados no saldo (ou gravados a 0 por
+ * esse motivo) aparecem pela mensalidade, para o mapa ler como toda a gente
+ * espera; isto é só apresentação e não mexe na caixa (ver feesCashForMonth).
+ */
 function playerTotal(season: SeasonData, playerId: string) {
+  const player = season.players.find((p) => p.id === playerId)
   return MONTH_KEYS.reduce((sum, key) => {
-    const player = season.players.find((p) => p.id === playerId)
     const entry = player?.payments[key]
+    if (entry?.status === 'paid' && (entry.counted || entry.amount === 0)) {
+      return sum + season.monthlyFee
+    }
     return sum + cashForEntry(entry, season.monthlyFee)
   }, 0)
 }
@@ -171,13 +180,17 @@ export function exportSeasonToExcel(season: SeasonData, seasons: SeasonData[] = 
 
   const jantaresRows = sortedDinners(season).flatMap((d) => {
     const s = summarizeDinner(d)
+    const empty = d.attendees.length === 0
     const header = {
       Data: formatDinnerDate(d.date),
       Adversário: d.opponent,
-      Quem: `— ${s.players} jogadores + ${s.guests} convidados + ${s.children} crianças —`,
+      // Jantar sem ninguém apontado: só a data, o adversário e o custo.
+      Quem: empty
+        ? ''
+        : `— ${s.players} jogadores + ${s.guests} convidados + ${s.children} crianças —`,
       Tipo: '',
-      'A pagar (€)': s.expected,
-      Pago: `${s.received}€ recebidos`,
+      'A pagar (€)': empty ? '' : s.expected,
+      Pago: empty ? '' : `${s.received}€ recebidos`,
       Método: d.cost != null ? `custo ${d.cost}€` : '',
     }
     const rows = [...d.attendees]
@@ -302,6 +315,20 @@ export function exportSeasonToPDF(season: SeasonData, seasons: SeasonData[] = [s
       head: [['Data', 'Adversário', 'Jog.', 'Conv.', 'Crianças', 'A receber', 'Recebido', 'Em falta', 'Custo']],
       body: dinners.map((d) => {
         const s = summarizeDinner(d)
+        // Jantar sem ninguém apontado: só a data, o adversário e o custo.
+        if (d.attendees.length === 0) {
+          return [
+            formatDinnerDate(d.date),
+            d.opponent,
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            d.cost != null ? formatEuro(d.cost) : '—',
+          ]
+        }
         return [
           formatDinnerDate(d.date),
           d.opponent,
