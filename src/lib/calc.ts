@@ -314,7 +314,7 @@ export function openDebtsTotal(season: SeasonData) {
 /** Dívidas de épocas anteriores liquidadas num determinado mês desta época. */
 export function debtsIncomeForMonth(season: SeasonData, month: MonthKey): number {
   return season.carriedDebts
-    .filter((d) => d.settled?.month === month)
+    .filter((d) => d.settled?.month === month && !d.settled.counted)
     .reduce((sum, d) => sum + (d.settled?.amount ?? 0), 0)
 }
 
@@ -356,7 +356,10 @@ export function seasonTotals(season: SeasonData) {
     totalExpected += s.totalExpected
   }
   const dinners = seasonDinnerTotals(season)
-  const debtsReceived = season.carriedDebts.reduce((sum, d) => sum + (d.settled?.amount ?? 0), 0)
+  const debtsReceived = season.carriedDebts.reduce(
+    (sum, d) => sum + (d.settled && !d.settled.counted ? d.settled.amount : 0),
+    0,
+  )
   const totalExpenses = season.expenses.reduce((sum, e) => sum + e.amount, 0) + dinners.cost
   return {
     totalReceived,

@@ -123,6 +123,8 @@ export interface CarriedDebt {
     date: string
     method: PaymentMethod
     amount: number
+    /** O dinheiro já estava contado no saldo: fica pago, sem somar à caixa. */
+    counted?: boolean
   }
 }
 

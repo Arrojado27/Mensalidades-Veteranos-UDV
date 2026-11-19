@@ -25,6 +25,8 @@ import type { MonthKey, Player } from '../types'
 export function Dashboard() {
   const { season, setPayment, cloud } = useData()
   const [editing, setEditing] = useState<{ player: Player; month: MonthKey } | null>(null)
+  // A lista começa fechada, para não tocar sem querer num "Pago" ao abrir a app.
+  const [showList, setShowList] = useState(false)
 
   const currentMonthKey = getCurrentMonthKey(season)
   const referenceMonth = currentMonthKey ?? MONTH_KEYS[MONTH_KEYS.length - 1]
@@ -136,7 +138,7 @@ export function Dashboard() {
             </span>
           </div>
 
-          {summary.pending.length > 0 && (
+          {summary.pending.length > 0 && showList && (
             <p className="mt-2 px-4 text-[11px] text-subtle">
               "Pago" regista logo com a forma habitual do jogador · toca no nome para escolher outra.
             </p>
@@ -153,6 +155,13 @@ export function Dashboard() {
             <p className="px-4 py-5 text-center text-[13px] text-muted">
               Está tudo pago este mês. 🎉
             </p>
+          ) : !showList ? (
+            <button
+              onClick={() => setShowList(true)}
+              className="btn btn-soft mx-4 my-3 w-[calc(100%-2rem)] text-[13px]"
+            >
+              Mostrar {pending.length} {pending.length === 1 ? 'jogador por pagar' : 'jogadores por pagar'}
+            </button>
           ) : (
             <ul className="mt-1 divide-y divide-line">
               {pending.map((p, index) => (
@@ -183,6 +192,14 @@ export function Dashboard() {
                 </li>
               ))}
             </ul>
+          )}
+          {summary.pending.length > 0 && showList && (
+            <button
+              onClick={() => setShowList(false)}
+              className="btn btn-soft mx-4 my-3 w-[calc(100%-2rem)] text-[13px]"
+            >
+              Esconder lista
+            </button>
           )}
         </section>
 

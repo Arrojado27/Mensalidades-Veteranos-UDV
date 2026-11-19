@@ -61,7 +61,10 @@ interface DataContextValue {
   updateAttendee: (dinnerId: string, attendeeId: string, patch: Partial<DinnerAttendee>) => void
   removeAttendee: (dinnerId: string, attendeeId: string) => void
   addDebt: (debt: Omit<CarriedDebt, 'id'>) => void
-  settleDebt: (debtId: string, settle: { month: MonthKey; method: PaymentMethod; amount: number }) => void
+  settleDebt: (
+    debtId: string,
+    settle: { month: MonthKey; method: PaymentMethod; amount: number; counted?: boolean },
+  ) => void
   /** Liquida várias dívidas de uma vez, com a mesma data e forma de pagamento. */
   settleDebts: (debtIds: string[], settle: { month: MonthKey; method: PaymentMethod }) => void
   unsettleDebt: (debtId: string) => void
@@ -319,7 +322,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   )
 
   const settleDebt = useCallback(
-    (debtId: string, settle: { month: MonthKey; method: PaymentMethod; amount: number }) => {
+    (
+      debtId: string,
+      settle: { month: MonthKey; method: PaymentMethod; amount: number; counted?: boolean },
+    ) => {
       updateSeason((s) => ({
         ...s,
         carriedDebts: s.carriedDebts.map((d) =>

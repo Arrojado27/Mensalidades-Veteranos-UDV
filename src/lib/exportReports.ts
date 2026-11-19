@@ -224,7 +224,6 @@ export function exportSeasonToExcel(season: SeasonData, seasons: SeasonData[] = 
     'Despesas (€)': monthExpensesTotal(season, m.key),
     'Custo jantares (€)': dinnersCostForMonth(season, m.key),
     'Saldo em caixa (€)': computeLedgerBalance(season, m.key),
-    Ajustado: season.confirmedBalances[m.key] !== undefined ? 'Sim' : 'Não',
   }))
 
   const wb = XLSX.utils.book_new()
@@ -450,12 +449,11 @@ export function exportSeasonToPDF(season: SeasonData, seasons: SeasonData[] = [s
     ),
     formatEuro(monthOutflowTotal(season, m.key)),
     formatEuro(computeLedgerBalance(season, m.key)),
-    season.confirmedBalances[m.key] !== undefined ? 'Ajustado' : 'Automático',
   ])
 
   autoTable(doc, {
     startY: lastY() + 30,
-    head: [['Mês', 'Entradas', 'Saídas', 'Saldo em caixa', '']],
+    head: [['Mês', 'Entradas', 'Saídas', 'Saldo em caixa']],
     body: saldoBody,
     styles: { fontSize: 9, cellPadding: 5 },
     headStyles: { fillColor: brandRed, textColor: 255 },

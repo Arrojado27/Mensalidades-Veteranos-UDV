@@ -20,6 +20,7 @@ export function Debts() {
   const navigate = useNavigate()
   const [settling, setSettling] = useState<{ name: string; debts: CarriedDebt[] } | null>(null)
   const [amount, setAmount] = useState('')
+  const [counted, setCounted] = useState(false)
   const [method, setMethod] = useState<PaymentMethod>('cash')
   const [month, setMonth] = useState<MonthKey>(getCurrentMonthKey(season) ?? MONTH_KEYS[0])
   const [clearing, setClearing] = useState<{ name: string; ids: string[] } | null>(null)
@@ -92,6 +93,7 @@ export function Debts() {
     setSettling({ name, debts })
     setAmount(amountToInput(debts[0].amount))
     setMethod('cash')
+    setCounted(false)
     setMonth(getCurrentMonthKey(season) ?? MONTH_KEYS[0])
   }
 
@@ -379,7 +381,12 @@ export function Debts() {
                   }
                   const value = parseAmount(amount)
                   if (!value) return
-                  settleDebt(settling.debts[0].id, { month, method, amount: value })
+                  settleDebt(settling.debts[0].id, {
+                    month,
+                    method,
+                    amount: value,
+                    ...(counted ? { counted: true } : {}),
+                  })
                   setSettling(null)
                 }}
                 className="btn btn-primary flex-1"
@@ -401,6 +408,14 @@ export function Debts() {
                 onChange={(e) => setAmount(e.target.value)}
                 className="field"
               />
+              <span className="mt-2 flex items-center gap-2 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={counted}
+                  onChange={(e) => setCounted(e.target.checked)}
+                />
+                Já contado no saldo (não soma à caixa)
+              </span>
             </label>
           ) : (
             <div className="card-flat mb-3 flex items-center justify-between p-3">
